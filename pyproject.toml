@@ -1,38 +1,77 @@
 [project]
 name = "privacy-attacks-lab"
 version = "0.1.0"
-description = "One-line description."
+description = "Membership inference attacks, DP-SGD with RDP and PRV accountants, and canary extraction from a small language model"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Adeolu Ogunnoiki" }]
 dependencies = [
-    "pydantic>=2.0",
-    "pydantic-settings>=2.0",
-    "structlog>=24.0",
+    "numpy>=1.26",
+    "scipy>=1.11",
 ]
 
 [project.optional-dependencies]
-# install with: uv sync --extra ml
-ml = [
-    "numpy>=1.26",
+# DP-SGD training, models and shadow models: uv sync --extra torch
+torch = [
     "torch>=2.2",
+]
+# Canary extraction from a small language model: uv sync --extra lm
+lm = [
+    "torch>=2.2",
+    "transformers>=4.44,<5",
 ]
 
 [dependency-groups]
+# Rebuild the Rust core in place while editing it: make rust-develop
+rust = [
+    "maturin>=1.7,<2",
+]
+# Opt-in reference comparisons: Opacus accountants and DP-SGD, scikit-learn metrics.
+validation = [
+    "opacus>=1.5",
+    "scikit-learn>=1.4",
+]
+# Figures for the README (log-scale ROC curves, privacy and utility curves).
+plots = [
+    "matplotlib>=3.8",
+]
 dev = [
     "ruff>=0.8",
     "mypy>=1.14",
     "pytest>=8.0",
     "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "pre-commit>=3.7",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[project.scripts]
+privacy-attacks-lab = "privacy_attacks_lab.cli:main"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/privacy_attacks_lab"]
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+# The Rust core (rust/) is compiled into the package as `privacy_attacks_lab.pal_rs`,
+# so every install uses it; the Python implementation stays as the reference.
+[tool.maturin]
+python-source = "src"
+manifest-path = "rust/Cargo.toml"
+module-name = "privacy_attacks_lab.pal_rs"
+features = ["python"]
+
+[tool.uv]
+# Rebuild the extension when the Rust sources change.
+cache-keys = [{ file = "pyproject.toml" }, { file = "rust/Cargo.toml" }, { file = "rust/src/**/*.rs" }]
+
+# CPU wheels of torch on Linux (CI and Docker); macOS wheels come from PyPI and include MPS.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 # ---------------------------------------------------------------------------
 # Tooling
@@ -44,7 +83,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "C4", "RUF"]
-ignore = []
+ignore = ["N803", "N806"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["privacy_attacks_lab"]
@@ -54,11 +93,24 @@ python_version = "3.11"
 strict = true
 warn_unused_configs = true
 disallow_untyped_defs = true
-plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["torch.*", "transformers.*", "scipy.*", "opacus.*", "sklearn.*", "matplotlib.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["privacy_attacks_lab.dpsgd", "privacy_attacks_lab.models", "privacy_attacks_lab.training", "privacy_attacks_lab.lm"]
+disallow_untyped_calls = false
+disallow_subclassing_any = false
+warn_return_any = false
 
 [tool.pytest.ini_options]
 addopts = "-ra -q"
 testpaths = ["tests"]
+markers = [
+    "torch: needs torch (uv sync --extra torch)",
+    "validation: needs the validation group (Opacus, scikit-learn)",
+]
 
 [tool.coverage.run]
 source = ["src"]

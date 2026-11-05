@@ -32,3 +32,12 @@ checkpoints/
 .DS_Store
 .idea/
 .vscode/
+
+# Rust core
+rust/target/
+*.so
+.hypothesis/
+
+# Datasets, model weights and run artifacts live outside the repo
+.bench-data/
+runs/

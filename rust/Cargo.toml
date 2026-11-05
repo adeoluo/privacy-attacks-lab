@@ -1,0 +1,26 @@
+[package]
+name = "pal-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Rust core of privacy-attacks-lab: Renyi DP accounting of the subsampled Gaussian mechanism and ROC metrics"
+license = "MIT"
+authors = ["Adeolu Ogunnoiki"]
+repository = "https://github.com/adeoluo/privacy-attacks-lab"
+publish = false
+
+[lib]
+name = "pal_rs"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+# Enabled by maturin (see pyproject.toml). Plain `cargo test` builds without linking Python.
+python = ["dep:pyo3"]
+
+[dependencies]
+pyo3 = { version = "0.30", optional = true, features = ["abi3-py311"] }
+libm = "0.2"
+
+[profile.release]
+lto = true
+codegen-units = 1
