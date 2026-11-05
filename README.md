@@ -1,15 +1,15 @@
 <h1 align="center">Privacy Attacks Lab</h1>
 
 <p align="center">
-  <em>Membership inference attacks, DP-SGD with RDP and PRV accountants, and canary extraction from a small language model</em>
+  <em>Membership inference attacks (LiRA, shadow models, calibrated loss), DP-SGD with RDP and PRV accountants checked against Opacus, and canary exposure and extraction from small language models.</em>
 </p>
 
 <p align="center">
-  <a href="../../actions"><img alt="CI" src="https://img.shields.io/badge/CI-passing-brightgreen"></a>
-  <img alt="Coverage" src="https://img.shields.io/badge/coverage-90%25-brightgreen">
-  <img alt="Python" src="https://img.shields.io/badge/python-3.11+-blue">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
-  <a href="DEMONSTRATION_URL"><img alt="Demonstration" src="https://img.shields.io/badge/demonstration-live-6366F1"></a>
+  <a href="https://github.com/adeoluo/privacy-attacks-lab/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/adeoluo/privacy-attacks-lab/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/adeoluo/privacy-attacks-lab/releases"><img alt="Release" src="https://img.shields.io/github/v/release/adeoluo/privacy-attacks-lab"></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue">
+  <img alt="Rust" src="https://img.shields.io/badge/rust-stable-orange">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
 ---
