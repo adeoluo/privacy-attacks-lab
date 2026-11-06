@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -58,9 +59,21 @@ class DPConfig:
 
 Engine = Literal["vmap", "hooks", "ghost"]
 
+#: ``loss_fn(model, x, y)`` returns one loss per example (shape ``(batch,)``).
+LossFn = Callable[[nn.Module, torch.Tensor, torch.Tensor], torch.Tensor]
+
+
+def classification_loss(model: nn.Module, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """Per-example cross-entropy of a classifier."""
+    return F.cross_entropy(model(x), y, reduction="none")
+
 
 def per_sample_grads(
-    model: nn.Module, x: torch.Tensor, y: torch.Tensor, engine: Engine = "vmap"
+    model: nn.Module,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    engine: Engine = "vmap",
+    loss_fn: LossFn = classification_loss,
 ) -> tuple[dict[str, torch.Tensor], torch.Tensor]:
     """Gradient of each example's cross-entropy loss, ``{name: (batch, *param.shape)}``,
     and the per-example losses.
@@ -72,15 +85,23 @@ def per_sample_grads(
     :mod:`privacy_attacks_lab.models`).
     """
     if engine in ("hooks", "ghost"):
-        return _per_sample_grads_hooks(model, x, y)
+        return _per_sample_grads_hooks(model, x, y, loss_fn)
     if engine != "vmap":
         raise ValueError(f"unknown engine {engine!r}")
     params = {k: v.detach() for k, v in model.named_parameters() if v.requires_grad}
     buffers = {k: v.detach() for k, v in model.named_buffers()}
 
+    class _Bound(nn.Module):
+        def forward(self, xb: torch.Tensor) -> torch.Tensor:
+            return functional_call(model, current, (xb,))
+
+    bound = _Bound()
+    current: tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]] = (params, buffers)
+
     def loss_one(p: dict[str, torch.Tensor], xi: torch.Tensor, yi: torch.Tensor) -> torch.Tensor:
-        out = functional_call(model, (p, buffers), (xi.unsqueeze(0),))
-        return F.cross_entropy(out, yi.unsqueeze(0))
+        nonlocal current
+        current = (p, buffers)
+        return loss_fn(bound, xi.unsqueeze(0), yi.unsqueeze(0))[0]
 
     grads, losses = vmap(grad_and_value(loss_one), in_dims=(None, 0, 0))(params, x, y)
     return dict(grads), losses
@@ -89,13 +110,18 @@ def per_sample_grads(
 _SUPPORTED = (nn.Linear, nn.Conv2d, nn.GroupNorm)
 
 
+def _trainable(mod: nn.Module) -> bool:
+    return any(p.requires_grad for p in mod.parameters(recurse=False))
+
+
 def _capture(
-    model: nn.Module, x: torch.Tensor, y: torch.Tensor
+    model: nn.Module, x: torch.Tensor, y: torch.Tensor, loss_fn: LossFn = classification_loss
 ) -> tuple[list[tuple[str, nn.Module, torch.Tensor, torch.Tensor]], torch.Tensor]:
     """One batched forward and backward pass recording, for every layer with
-    parameters, its input activation and the gradient of the summed loss with
-    respect to its output. Returns ``[(name, module, activation, out_grad)]`` and
-    the per-example losses."""
+    trainable parameters, its input activation and the gradient of the summed
+    loss with respect to its output. Frozen layers (for example the embeddings of
+    a fine-tuned language model) are skipped. Returns
+    ``[(name, module, activation, out_grad)]`` and the per-example losses."""
     acts: dict[nn.Module, torch.Tensor] = {}
     outs: dict[nn.Module, torch.Tensor] = {}
     handles = []
@@ -106,14 +132,16 @@ def _capture(
             out.register_hook(lambda g: outs.__setitem__(m, g.detach()))
 
     for mod in model.modules():
+        if not _trainable(mod):
+            continue
         if isinstance(mod, _SUPPORTED):
             handles.append(mod.register_forward_hook(hook))
-        elif any(True for _ in mod.parameters(recurse=False)):
+        else:
             for h in handles:
                 h.remove()
             raise ValueError(f"the hooks engines do not support {type(mod).__name__}")
     try:
-        losses = F.cross_entropy(model(x), y, reduction="none")
+        losses = loss_fn(model, x, y)
         params = [p for p in model.parameters() if p.requires_grad]
         torch.autograd.grad(losses.sum(), params)
     finally:
@@ -130,15 +158,17 @@ def _layer_grads(mod: nn.Module, a: torch.Tensor, g: torch.Tensor) -> dict[str, 
 
     For a linear layer ``z = W a + b`` the loss of example ``i`` alone has
     ``dL_i/dW = g_i a_i^T`` where ``g_i = dL/dz_i`` of the summed loss (the other
-    examples do not touch row ``i``). A convolution is a linear layer applied to
-    every unfolded patch, so ``dL_i/dW = sum_l g_il patch_il^T``. GroupNorm's affine
+    examples do not touch row ``i``); on sequences (``a_i`` of shape ``(T, in)``)
+    the positions add up, ``dL_i/dW = sum_t g_it a_it^T``. A convolution is a linear layer
+    applied to every unfolded patch, so ``dL_i/dW = sum_l g_il patch_il^T``. GroupNorm's affine
     weights see the normalised input ``xhat``: ``dL_i/dgamma_c = sum g xhat``.
     """
     out: dict[str, torch.Tensor] = {}
     if isinstance(mod, nn.Linear):
-        out["weight"] = torch.einsum("bo,bi->boi", g, a)
+        a3, g3 = _as_sequence(a), _as_sequence(g)
+        out["weight"] = torch.einsum("bto,bti->boi", g3, a3)
         if mod.bias is not None:
-            out["bias"] = g
+            out["bias"] = g3.sum(dim=1)
     elif isinstance(mod, nn.Conv2d):
         patches = F.unfold(a, mod.kernel_size, mod.dilation, mod.padding, mod.stride)  # type: ignore[arg-type]
         g_flat = g.flatten(2)
@@ -156,10 +186,15 @@ def _layer_grads(mod: nn.Module, a: torch.Tensor, g: torch.Tensor) -> dict[str, 
     return out
 
 
+def _as_sequence(t: torch.Tensor) -> torch.Tensor:
+    """``(b, f)`` to ``(b, 1, f)`` and ``(b, ..., f)`` to ``(b, T, f)``."""
+    return t.reshape(t.shape[0], -1, t.shape[-1])
+
+
 def _per_sample_grads_hooks(
-    model: nn.Module, x: torch.Tensor, y: torch.Tensor
+    model: nn.Module, x: torch.Tensor, y: torch.Tensor, loss_fn: LossFn = classification_loss
 ) -> tuple[dict[str, torch.Tensor], torch.Tensor]:
-    layers, losses = _capture(model, x, y)
+    layers, losses = _capture(model, x, y, loss_fn)
     grads: dict[str, torch.Tensor] = {}
     for name, mod, a, g in layers:
         prefix = f"{name}." if name else ""
@@ -170,7 +205,11 @@ def _per_sample_grads_hooks(
 
 
 def clipped_sum_ghost(
-    model: nn.Module, x: torch.Tensor, y: torch.Tensor, max_norm: float
+    model: nn.Module,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    max_norm: float,
+    loss_fn: LossFn = classification_loss,
 ) -> tuple[dict[str, torch.Tensor], torch.Tensor, torch.Tensor]:
     """Summed clipped gradients without materialising linear layers' per-example gradients.
 
@@ -178,19 +217,31 @@ def clipped_sum_ghost(
     a linear layer on unbatched-in-time inputs, ``||g_i a_i^T||_F^2 = ||g_i||^2 ||a_i||^2``,
     so per-example norms cost O(b (in + out)) instead of O(b in out), and the clipped
     sum ``sum_i c_i g_i a_i^T`` is the single matrix product ``(c * G)^T A``.
+    On sequences the norm is ``||sum_t g_t a_t^T||_F^2 = <A A^T, G G^T>_F``, which
+    costs O(b T^2 (in + out)) and wins whenever ``T^2 < in * out`` (Li et al. 2022,
+    Section 4); longer sequences fall back to materialising the gradient.
     Convolutions and GroupNorm have few parameters here and are materialised.
 
     Returns ``(summed clipped gradients, per-example norms, per-example losses)``.
     """
-    layers, losses = _capture(model, x, y)
+    layers, losses = _capture(model, x, y, loss_fn)
     b = x.shape[0]
-    sq = torch.zeros(b, device=x.device, dtype=torch.float32)
+    sq = torch.zeros(b, device=losses.device, dtype=torch.float32)
     dense: dict[str, torch.Tensor] = {}
+    ghost: set[str] = set()
     for name, mod, a, g in layers:
         prefix = f"{name}." if name else ""
-        if isinstance(mod, nn.Linear) and a.dim() == 2:
-            g2 = (g * g).sum(dim=1)
-            sq += g2 * (a * a).sum(dim=1)
+        if _use_ghost(mod, a):
+            ghost.add(name)
+            if a.dim() == 2:
+                g2 = (g * g).sum(dim=1)
+                sq += g2 * (a * a).sum(dim=1)
+            else:
+                a3, g3 = _as_sequence(a), _as_sequence(g)
+                aa = torch.bmm(a3, a3.transpose(1, 2))
+                gg = torch.bmm(g3, g3.transpose(1, 2))
+                sq += (aa * gg).sum(dim=(1, 2))
+                g2 = g3.sum(dim=1).pow(2).sum(dim=1)
             if mod.bias is not None:
                 sq += g2
         else:
@@ -202,15 +253,25 @@ def clipped_sum_ghost(
     summed: dict[str, torch.Tensor] = {}
     for name, mod, a, g in layers:
         prefix = f"{name}." if name else ""
-        if isinstance(mod, nn.Linear) and a.dim() == 2:
-            cg = g * factor[:, None]
-            summed[prefix + "weight"] = cg.T @ a
+        if name in ghost:
+            a2 = a.reshape(-1, a.shape[-1])
+            cg = (_as_sequence(g) * factor[:, None, None]).reshape(-1, g.shape[-1])
+            summed[prefix + "weight"] = cg.T @ a2
             if mod.bias is not None:
                 summed[prefix + "bias"] = cg.sum(dim=0)
     for k, v in dense.items():
         summed[k] = torch.einsum("b,b...->...", factor, v)
     names = [k for k, p in model.named_parameters() if p.requires_grad]
     return {k: summed[k] for k in names}, norms, losses
+
+
+def _use_ghost(mod: nn.Module, a: torch.Tensor) -> bool:
+    if not isinstance(mod, nn.Linear):
+        return False
+    if a.dim() == 2:
+        return True
+    steps = a.numel() // (a.shape[0] * a.shape[-1])
+    return steps * steps < mod.in_features * mod.out_features
 
 
 def clip_and_sum(
@@ -241,6 +302,7 @@ def noisy_gradient(
     generator: torch.Generator | None = None,
     chunk: int | None = None,
     engine: Engine = "ghost",
+    loss_fn: LossFn = classification_loss,
 ) -> tuple[dict[str, torch.Tensor], float]:
     """The privatised gradient of one logical batch (steps 2 to 4 above) and the summed
     loss of its examples."""
@@ -248,13 +310,14 @@ def noisy_gradient(
     total: dict[str, torch.Tensor] = {
         k: torch.zeros_like(p) for k, p in model.named_parameters() if p.requires_grad
     }
-    loss_sum = torch.zeros((), device=x.device)
+    device = next(p.device for p in model.parameters() if p.requires_grad)
+    loss_sum = torch.zeros((), device=device)
     for s in range(0, x.shape[0], chunk):
         xc, yc = x[s : s + chunk], y[s : s + chunk]
         if engine == "ghost":
-            summed, _, losses = clipped_sum_ghost(model, xc, yc, dp.max_grad_norm)
+            summed, _, losses = clipped_sum_ghost(model, xc, yc, dp.max_grad_norm, loss_fn)
         else:
-            grads, losses = per_sample_grads(model, xc, yc, engine)
+            grads, losses = per_sample_grads(model, xc, yc, engine, loss_fn)
             summed, _ = clip_and_sum(grads, dp.max_grad_norm)
         loss_sum += losses.detach().sum()
         for k in total:
