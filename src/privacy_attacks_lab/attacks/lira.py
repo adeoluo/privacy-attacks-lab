@@ -76,7 +76,7 @@ def _pooled_std(values: np.ndarray, keep: np.ndarray, mid: np.ndarray) -> np.nda
     dev = np.where(keep[:, :, None], values - mid[None], 0.0)
     dev = np.nan_to_num(dev)
     dof = max(int(keep.sum()), 1)
-    return np.sqrt((dev**2).sum(axis=(0, 1)) / dof)
+    return np.asarray(np.sqrt((dev**2).sum(axis=(0, 1)) / dof))
 
 
 def fit_gaussians(

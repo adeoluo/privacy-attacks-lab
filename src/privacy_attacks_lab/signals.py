@@ -31,11 +31,11 @@ def _check(logits: np.ndarray, labels: np.ndarray) -> tuple[np.ndarray, np.ndarr
 def log_softmax(logits: np.ndarray) -> np.ndarray:
     z = np.asarray(logits, dtype=np.float64)
     m = z.max(axis=-1, keepdims=True)
-    return z - m - np.log(np.exp(z - m).sum(axis=-1, keepdims=True))
+    return np.asarray(z - m - np.log(np.exp(z - m).sum(axis=-1, keepdims=True)))
 
 
 def softmax(logits: np.ndarray) -> np.ndarray:
-    return np.exp(log_softmax(logits))
+    return np.asarray(np.exp(log_softmax(logits)))
 
 
 def loss(logits: np.ndarray, labels: np.ndarray) -> np.ndarray:

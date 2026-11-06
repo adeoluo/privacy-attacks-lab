@@ -45,4 +45,4 @@ def calibrated_attack(
         baseline = (weights * r).sum(axis=0) / count
     # Examples with no OUT reference fall back to the mean over all references.
     baseline = np.where(count > 0, baseline, r.mean(axis=0))
-    return -(t - baseline)
+    return np.asarray(-(t - baseline))
