@@ -3,7 +3,7 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-use crate::rdp;
+use crate::{rdp, roc};
 
 fn check(q: f64, sigma: f64, orders: &[f64]) -> PyResult<()> {
     if !(0.0..=1.0).contains(&q) {
@@ -79,12 +79,73 @@ fn calibrate_sigma(
     ))
 }
 
+fn f64s(buf: &[u8], what: &str) -> PyResult<Vec<f64>> {
+    if !buf.len().is_multiple_of(8) {
+        return Err(PyValueError::new_err(format!(
+            "{what}: buffer is not float64"
+        )));
+    }
+    Ok(buf
+        .as_chunks::<8>()
+        .0
+        .iter()
+        .map(|c| f64::from_ne_bytes(*c))
+        .collect())
+}
+
+fn scores_labels(scores: &[u8], labels: &[u8]) -> PyResult<(Vec<f64>, Vec<bool>)> {
+    let s = f64s(scores, "scores")?;
+    if s.len() != labels.len() {
+        return Err(PyValueError::new_err(
+            "scores and labels must have the same length",
+        ));
+    }
+    Ok((s, labels.iter().map(|&b| b != 0).collect()))
+}
+
+/// ROC curve `(fpr, tpr, thresholds)` from float64 scores and uint8 labels (raw bytes).
+#[pyfunction]
+fn roc_curve(scores: &[u8], labels: &[u8]) -> PyResult<(Vec<f64>, Vec<f64>, Vec<f64>)> {
+    let (s, l) = scores_labels(scores, labels)?;
+    let order = roc::argsort_desc(&s);
+    Ok(roc::roc_curve_sorted(&s, &l, None, &order))
+}
+
+/// `(auc, accuracy, [tpr at each target fpr])`.
+#[pyfunction]
+fn roc_summary(scores: &[u8], labels: &[u8], targets: Vec<f64>) -> PyResult<(f64, f64, Vec<f64>)> {
+    let (s, l) = scores_labels(scores, labels)?;
+    let r = roc::summarize(&s, &l, &targets);
+    Ok((r.auc, r.accuracy, r.tpr_at))
+}
+
+/// Bootstrap replicates: a list of `(auc, accuracy, [tpr at targets])`.
+#[pyfunction]
+fn roc_bootstrap(
+    py: Python<'_>,
+    scores: &[u8],
+    labels: &[u8],
+    targets: Vec<f64>,
+    reps: usize,
+    seed: u64,
+) -> PyResult<Vec<(f64, f64, Vec<f64>)>> {
+    let (s, l) = scores_labels(scores, labels)?;
+    let out = py.detach(|| roc::bootstrap(&s, &l, &targets, reps, seed));
+    Ok(out
+        .into_iter()
+        .map(|r| (r.auc, r.accuracy, r.tpr_at))
+        .collect())
+}
+
 #[pymodule]
 fn pal_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(compute_rdp, m)?)?;
     m.add_function(wrap_pyfunction!(rdp_to_epsilon, m)?)?;
     m.add_function(wrap_pyfunction!(epsilon, m)?)?;
     m.add_function(wrap_pyfunction!(calibrate_sigma, m)?)?;
+    m.add_function(wrap_pyfunction!(roc_curve, m)?)?;
+    m.add_function(wrap_pyfunction!(roc_summary, m)?)?;
+    m.add_function(wrap_pyfunction!(roc_bootstrap, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }
