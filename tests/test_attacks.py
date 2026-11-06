@@ -267,3 +267,32 @@ def test_shadow_attack_errors() -> None:
         ShadowAttack().score(np.zeros((2, 4)), np.zeros(2))
     with pytest.raises(ValueError, match="shadows"):
         ShadowAttack().fit(np.zeros((2, 4)), np.zeros((2, 2), dtype=bool), np.zeros(2))
+
+
+# --------------------------------------------------------------------------- reference parity
+
+
+def test_matches_authors_released_scoring() -> None:
+    from privacy_attacks_lab.attacks import lira_reference as ref
+
+    phi, m = simulate(32, 500, seed=7)
+    rng = np.random.default_rng(0)
+    refs = np.stack([phi, phi + 0.1 * rng.normal(size=phi.shape)], axis=2)
+    target = rng.normal(0, 4, size=(500, 2))
+    # Balanced masks: per-example variance versions agree to rounding.
+    np.testing.assert_allclose(
+        lira_online(target, refs, m), ref.reference_online(m, refs, target), rtol=1e-9, atol=1e-9
+    )
+    np.testing.assert_allclose(
+        lira_offline(target, refs, m, one_sided=False),
+        ref.reference_offline(m, refs, target),
+        rtol=1e-9,
+        atol=1e-9,
+    )
+    # Offline with a pooled variance: the reference pools around the global mean,
+    # so the two only agree in ranking when every example shares one centre.
+    flat = np.where(m[:, :, None], 1.0, 0.0) + rng.normal(size=refs.shape)
+    a = lira_offline(target, flat, m, fix_variance=True, one_sided=False)
+    b = ref.reference_offline(m, flat, target, fix_variance=True)
+    assert np.corrcoef(a, b)[0, 1] > 0.99
+    assert ref.reference_online(m, refs, target, fix_variance=True).shape == (500,)

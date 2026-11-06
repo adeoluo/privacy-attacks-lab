@@ -25,3 +25,6 @@ fetch https://github.com/privacytrustlab/datasets/raw/master/dataset_purchase.tg
   5d11041c383e5885c14098a5043fd63c30f495408289815d3f257da58c4f3046
 fetch https://github.com/privacytrustlab/datasets/raw/master/dataset_texas.tgz dataset_texas.tgz \
   a729757c8a00254342c7f9f8045ee039c5b404441997c52046a3152faf978839
+# WikiText-2 (raw), Merity et al. 2016: 4.7 MB, the fine-tuning text for the canary experiments.
+fetch https://wikitext.smerity.com/wikitext-2-raw-v1.zip wikitext-2-raw-v1.zip \
+  ef7edb566e3e2b2d31b29c1fdb0c89a4cc683597484c3dc2517919c615435a11

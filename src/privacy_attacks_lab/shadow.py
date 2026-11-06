@@ -244,6 +244,25 @@ class Signals:
     def num_models(self) -> int:
         return int(self.masks.shape[0])
 
+    @property
+    def num_queries(self) -> int:
+        return int(self.phi.shape[2])
+
+    def query(self, q: int) -> Signals:
+        """Only query ``q`` (for images 0 is the identity view and 1 the h-flip)."""
+        if not 0 <= q < self.num_queries:
+            raise ValueError(f"query {q} out of range")
+        sl = slice(q, q + 1)
+        return Signals(
+            self.phi[:, :, sl],
+            self.loss[:, :, sl],
+            self.topk[:, :, sl],
+            self.correct[:, :, sl],
+            self.masks,
+            self.labels,
+            self.meta,
+        )
+
     def select(self, models: np.ndarray | list[int]) -> Signals:
         idx = np.asarray(models)
         return Signals(

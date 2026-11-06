@@ -37,6 +37,14 @@ VARIANTS: dict[str, str] = {
     "lira-online-fixed": "LiRA online, pooled variance",
 }
 
+#: The authors' released LiRA scoring (:mod:`privacy_attacks_lab.attacks.lira_reference`).
+REFERENCE_VARIANTS: dict[str, str] = {
+    "lira-online-ref": "LiRA online, authors' released scoring",
+    "lira-online-ref-fixed": "LiRA online, authors' released scoring, global variance",
+    "lira-offline-ref": "LiRA offline, authors' released scoring (two-sided)",
+    "lira-offline-ref-fixed": "LiRA offline, authors' released scoring, global variance",
+}
+
 
 def attack_scores(
     sig: Signals,
@@ -67,6 +75,16 @@ def attack_scores(
             shadow_features(sig.topk[use], sig.phi[use]), sig.masks[use], sig.labels
         )
         return attack.score(shadow_features(sig.topk[target], t_phi), sig.labels)
+    if variant.endswith("-ref") or variant.endswith("-ref-fixed"):
+        from privacy_attacks_lab.attacks import lira_reference as ref
+
+        fixed = variant.endswith("-fixed")
+        t3 = t_phi[:, None] if t_phi.ndim == 1 else t_phi
+        r3 = r_phi[:, :, None] if r_phi.ndim == 2 else r_phi
+        if variant.startswith("lira-online"):
+            return ref.reference_online(r_masks, r3, t3, fix_variance=fixed)
+        if variant.startswith("lira-offline"):
+            return ref.reference_offline(r_masks, r3, t3, fix_variance=fixed)
     if variant.startswith("lira-"):
         fixed = variant.endswith("-fixed")
         if variant.startswith("lira-online"):
