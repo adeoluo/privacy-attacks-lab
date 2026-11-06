@@ -83,7 +83,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "C4", "RUF"]
-ignore = ["N803", "N806"]
+ignore = ["N803", "N806", "N812"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["privacy_attacks_lab"]
