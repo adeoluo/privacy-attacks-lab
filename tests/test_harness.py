@@ -257,7 +257,7 @@ def _signals(models: int = 12, n: int = 300, seed: int = 0) -> Signals:
 
 def test_attack_scores_every_variant() -> None:
     sig = _signals()
-    extra = ["calibrated-online", "lira-offline-pdf"]
+    extra = ["calibrated-online", "lira-offline-pdf", *evaluation.REFERENCE_VARIANTS]
     for v in [*evaluation.VARIANTS, *extra]:
         s = evaluation.attack_scores(sig, 0, v, shadow_models=4)
         assert s.shape == (300,)
@@ -284,3 +284,21 @@ def test_evaluate_aggregates_targets() -> None:
     assert "tpr@0.001_std" in agg["loss"]
     one = evaluation.evaluate(sig, targets=[0], variants=["loss"])
     assert one["loss"].aggregate()["auc_std"] == 0.0
+
+
+def test_signals_query_slice() -> None:
+    sig = _signals()
+    two = Signals(
+        np.concatenate([sig.phi, sig.phi + 1], axis=2),
+        np.concatenate([sig.loss, sig.loss], axis=2),
+        np.concatenate([sig.topk, sig.topk], axis=2),
+        np.concatenate([sig.correct, sig.correct], axis=2),
+        sig.masks,
+        sig.labels,
+    )
+    assert two.num_queries == 2
+    one = two.query(1)
+    assert one.num_queries == 1
+    np.testing.assert_allclose(one.phi, sig.phi + 1)
+    with pytest.raises(ValueError, match="out of range"):
+        two.query(2)
