@@ -68,6 +68,26 @@ Bootstrap 95% intervals for target 0, LiRA online with fixed variance: CIFAR-10 
   (74.9%, 4.05%): the models were trained without augmentation, so the mirror is a weaker signal.
   Result file: [`mia_cifar10_firstquery.json`](../benchmarks/results/mia_cifar10_firstquery.json).
 
+### Defence: DP-SGD families on Purchase100
+Two further families of 8 MLPs (masks 0 to 7 of the same scheme) were trained with DP-SGD: Poisson
+sampling with expected batch 1,024, clipping norm 1, lr 1.0, 30 epochs, sigma calibrated with the RDP
+accountant at delta 1e-5 (`train_shadows.py purchase100-dp8 --models 0-7`, then
+`mia_benchmark.py purchase100-dp8`; same for `dp1`). Every attack has 7 references per target.
+
+| Family | Train / held-out accuracy | Best AUC | Best TPR@0.1% | Best TPR@1% | DP bound on TPR@0.1% |
+|---|---:|---:|---:|---:|---:|
+| Non-private (64 models) | 99.8% / 93.0% | 65.5% | 1.49% | 6.66% | none |
+| epsilon 8.00, sigma 0.718 | 76.3% / 67.9% | 56.5% | 0.13% | 1.29% | 99.97% |
+| epsilon 1.00, sigma 2.396 | 13.9% / 13.0% | 51.3% | 0.11% | 1.09% | 0.27% |
+
+At epsilon 8 the attacks keep a small AUC advantage (from the generalisation gap) but nothing above
+chance at 0.1% FPR; at epsilon 1 every attack is at chance and the model has lost most of its
+utility. With 7 references the per-example LiRA variance is unreliable (online AUC below 50%), and
+the authors' scoring returns no score without both IN and OUT references; both are artefacts of the
+small family, not evidence of protection. Result files:
+[`mia_purchase100-dp8.json`](../benchmarks/results/mia_purchase100-dp8.json),
+[`mia_purchase100-dp1.json`](../benchmarks/results/mia_purchase100-dp1.json).
+
 ### Comparison with published numbers (quoted, not rerun)
 Carlini et al. (2022) report 8.4% TPR at 0.1% FPR on CIFAR-10 (Table I; a wide ResNet,
 256 shadow models, 18 augmented queries) and 4.1% online and 1.4% offline on Purchase
