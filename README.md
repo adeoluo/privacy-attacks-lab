@@ -162,7 +162,7 @@ from privacy_attacks_lab import metrics
 
 eps = epsilon(q=256 / 50_000, sigma=1.1, steps=5_860, delta=1e-5, accountant="prv")
 sigma = calibrate_noise(8.0, 1e-5, q=1_024 / 98_662, steps=2_880)
-summary = metrics.summarize(scores, is_member)     # AUC, balanced accuracy, TPR at 0.1% and 1% FPR
+summary = metrics.summarize(scores, is_member)  # AUC, balanced accuracy, TPR at low FPR
 intervals = metrics.bootstrap(scores, is_member, reps=1_000)
 ```
 
