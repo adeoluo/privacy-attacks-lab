@@ -117,7 +117,45 @@ is consistent with the smaller model, 4x fewer references and 2 queries; on Purc
 here generalises well (93.0% held-out accuracy). The authors' scoring code applied to the same logits
 matches this implementation, so the gap comes from the models, not the attack code.
 
-## 2. Accountants and the Rust core
+## 2. Canaries and extraction on a language model
+
+`python benchmarks/lm_canaries.py --models base ft --device cpu`
+([`lm_canaries.json`](../benchmarks/results/lm_canaries.json)).
+
+### Setup
+Pythia-70M (deduplicated) fine-tuned with AdamW (lr 2e-4, batch 16, 4 epochs, 2,260 steps) on a
+seeded half of the WikiText-2 training paragraphs (8,778, truncated to 128 tokens) plus 24
+fictional canaries of the form "The vault code of NAME is d d d d d.", four canaries at each of
+1, 2, 4, 8, 16 and 32 insertions. Only the linear layers of the transformer blocks train (18.9M
+parameters). Fine-tuning took 95 minutes on MPS; the fine-tuned model was evaluated on the CPU
+because the MPS allocator ran out of memory during evaluation.
+
+### Results
+- **Exposure** is computed exactly by scoring all 100,000 secrets (maximum 16.61 bits). On the
+  base model the mean exposure per insertion level is 1.0 to 1.9 bits (chance). After fine-tuning,
+  canaries inserted once rank 13 to 80 (mean exposure 11.95 bits); 19 of the 20 canaries inserted
+  at least twice rank first, and greedy decoding returns the secret for 19 of the 24 canaries (3 of
+  4 at two insertions, all at four or more, none at one).
+- **Exposure estimators**: the skew-normal fit of Carlini et al. (2019) differs from the exact value
+  by between 0.7 bits above and 5.1 bits below; the estimate from 5,000 sampled candidates is capped
+  at log2 5,000 = 12.29 bits. Exact enumeration is cheap at 10^5 candidates (about 30 s per canary).
+- **Sequence membership inference** (4,000 members, 4,000 non-members, 500 bootstrap resamples):
+  loss AUC 79.1% [78.1, 80.1] with 9.35% TPR at 1% FPR; min-k% (k = 20%) 77.3%; zlib ratio 70.9% but
+  the highest TPR at 0.1% FPR (1.98%); reference (base model loss subtracted) 75.8%. The same attacks
+  on the base model are at chance (loss AUC 50.1%), so the split itself carries no signal.
+- **Utility**: validation perplexity falls from 112.5 to 76.6.
+- **Untargeted extraction**: 1,000 samples of 96 tokens contain no 32-token window found verbatim
+  in the members or non-members, for either model or among the top 100 by any ranking.
+
+### Discussion
+The reference attack is weaker than plain loss here, unlike for the image models, likely because
+the reference is the pre-trained model, which has already seen Wikipedia text in the Pile, so
+subtracting its loss also removes part of the signal of the fine-tuning set. Repetition is what
+makes a secret extractable; one insertion leaks a lot of exposure but not the secret itself under
+greedy decoding. DP-SGD fine-tuning (presets `dp8` and `dp1`) was not run: with ghost clipping it
+needs about twice the 95 minutes of plain fine-tuning per run on this machine.
+
+## 3. Accountants and the Rust core
 
 `python benchmarks/parity_speed.py` ([`parity_speed.json`](../benchmarks/results/parity_speed.json)).
 
@@ -132,7 +170,7 @@ matches this implementation, so the gap comes from the models, not the attack co
   calibration 18 ms vs 778 ms; ROC summary of 100,000 scores 21 ms (Rust), 54 ms (NumPy), 60 ms
   (scikit-learn `roc_curve` + `auc`); 1,000 bootstrap replicates 7.9 s vs 32.6 s.
 
-## 3. Threats to validity
+## 4. Threats to validity
 - **Small models.** The families are small enough to train 64 times on an 8 GB laptop. Attack
   success grows with memorisation, so these TPRs are not estimates for larger production models.
 - **Strong attacker.** The attacker knows the training recipe and the pool and has 63 reference
@@ -141,6 +179,8 @@ matches this implementation, so the gap comes from the models, not the attack co
   across targets understates the uncertainty of the mean; per-target bootstrap intervals are given.
 - **Shared hardware.** Timings vary with other load on the machine; the speed ratios were measured
   in the same process, one after the other.
+- **One fine-tuning run for the language model.** The canary results come from a single
+  fine-tuning seed and one canary placement; the per-level means are over four canaries.
 - **Single training seed per mask.** Each model has one seed; variance from training randomness and
   from the data split are not separated.
 
@@ -151,6 +191,7 @@ python benchmarks/train_shadows.py cifar10 && python benchmarks/mia_benchmark.py
 python benchmarks/mia_benchmark.py cifar10 --queries first
 python benchmarks/train_shadows.py purchase100 && python benchmarks/mia_benchmark.py purchase100
 python benchmarks/dp_utility.py purchase100 --eps 1 2 4 8 --seeds 0 1 2 --device cpu
+python benchmarks/lm_canaries.py --models base ft --device cpu
 python benchmarks/parity_speed.py
 python benchmarks/figures.py
 ```

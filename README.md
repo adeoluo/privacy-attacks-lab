@@ -146,6 +146,47 @@ approximation, not an upper bound). Reproduce: `python benchmarks/dp_utility.py 
   <img src="docs/figures/dp_attack.png" alt="LiRA TPR at low FPR under DP-SGD against the bound implied by epsilon" width="560">
 </p>
 
+### Canaries and extraction on Pythia-70M (WikiText-2)
+
+Pythia-70M (deduplicated) is fine-tuned for 4 epochs (2,260 steps, 18.9M trainable parameters in
+the block linear layers, 95 minutes on MPS) on a seeded half of the WikiText-2 training paragraphs
+(8,778, max 128 tokens) plus 24 fictional canaries "The vault code of &lt;name&gt; is d d d d d.", four each
+inserted 1, 2, 4, 8, 16 and 32 times (9,030 training sequences). Exposure is exact: all 100,000
+five-digit secrets are scored, so the rank of the true secret is known (maximum log2 100,000 =
+16.61 bits); "extracted" means greedy decoding of the prefix returns the secret.
+
+| Inserted | Base: mean rank | Base: exposure | Fine-tuned: ranks | Fine-tuned: exposure | Skew-normal estimate | Extracted |
+|---:|---:|---:|---|---:|---:|---:|
+| 1 | 59,754 | 1.43 | 23, 17, 80, 13 | 11.95 | 11.08 | 0 of 4 |
+| 2 | 51,400 | 1.32 | 2, 1, 1, 1 | 16.36 | 14.77 | 3 of 4 |
+| 4 | 55,529 | 1.94 | 1, 1, 1, 1 | 16.61 | 14.81 | 4 of 4 |
+| 8 | 48,235 | 1.35 | 1, 1, 1, 1 | 16.61 | 15.04 | 4 of 4 |
+| 16 | 50,367 | 1.02 | 1, 1, 1, 1 | 16.61 | 16.52 | 4 of 4 |
+| 32 | 51,070 | 1.01 | 1, 1, 1, 1 | 16.61 | 16.61 | 4 of 4 |
+
+A single insertion already lifts the secret from a random rank to the top 100 of 100,000; two
+insertions make it extractable. The skew-normal estimate of Carlini et al. (2019) misses by up
+to 5.1 bits on a single canary (it understates the top-ranked secrets and overstates some others
+by up to 0.7 bits), which is why the exact count is reported. Sequence membership inference on 4,000 member and 4,000 non-member paragraphs (500
+bootstrap resamples, 95% intervals):
+
+| Attack on the fine-tuned model | AUC | TPR at 0.1% FPR | TPR at 1% FPR |
+|---|---:|---:|---:|
+| Loss | 79.1% [78.1, 80.1] | 0.63% [0.02, 2.25] | 9.35% [7.80, 10.99] |
+| Min-k% probability (k = 20%) | 77.3% [76.3, 78.3] | 0.90% [0.08, 1.27] | 6.95% [5.69, 8.91] |
+| zlib ratio | 70.9% [69.8, 72.0] | 1.98% [0.97, 3.03] | 7.55% [6.13, 8.98] |
+| Reference (base model loss subtracted) | 75.8% [74.7, 76.9] | 0.73% [0.10, 1.79] | 6.25% [4.70, 7.83] |
+| Loss on the base model (control) | 50.1% [48.8, 51.2] | 0.22% [0.07, 0.47] | 1.23% [0.60, 1.58] |
+
+Fine-tuning lowers validation perplexity from 112.5 to 76.6. Untargeted extraction found nothing:
+of 1,000 unconditional top-k samples of 96 tokens, none contains a 32-token window that appears
+verbatim in the member or the non-member paragraphs, for the base or the fine-tuned model, also
+among the top 100 ranked by perplexity, reference ratio or zlib ratio. The control row confirms
+the split carries no signal before fine-tuning. The base model and fine-tuning ran on MPS; the
+fine-tuned model was evaluated on the CPU (20 minutes, 1.4 GB peak) after MPS ran out of memory.
+Reproduce: `python benchmarks/lm_canaries.py --models base ft --device cpu`; raw results:
+[`lm_canaries.json`](benchmarks/results/lm_canaries.json).
+
 ### Comparison with references
 
 | Check | Reference | Result | Verdict |
@@ -226,7 +267,7 @@ scripts/download_data.sh                                  # CIFAR-10, Purchase10
 python benchmarks/train_shadows.py purchase100            # 64 models into $PAL_DATA_DIR/runs/
 python benchmarks/mia_benchmark.py purchase100            # attack table, ROC, bootstrap, scaling
 python benchmarks/dp_utility.py purchase100 --eps 1 2 4 8 --seeds 0 1 2 --device cpu
-python benchmarks/lm_canaries.py --models base ft dp8     # canary exposure and extraction
+python benchmarks/lm_canaries.py --models base ft --device cpu  # canary exposure, extraction
 python benchmarks/figures.py                              # figures from committed results
 ```
 
@@ -309,6 +350,10 @@ proof of privacy; only the DP-SGD guarantee is a bound.
   memorise more, so the TPRs here understate what LiRA achieves on WRN-sized models.
 - 64 models per dataset, not the paper's 256; the reference-count curve is still rising at 63.
 - Texas100 is downloaded and supported by the loader and presets but was not benchmarked.
+- The language model was fine-tuned without DP only. The script has DP-SGD presets (epsilon 8
+  and 1, ghost clipping) but each would take several hours on this machine and was not run.
+- Untargeted extraction used 1,000 samples; the extraction literature uses hundreds of thousands,
+  so zero verbatim hits does not show that nothing is extractable.
 - The attacker knows the exact training recipe and data pool, a strong and favourable setting.
 - Wall-clock timings were taken on a machine shared with other jobs and vary between runs.
 
@@ -316,6 +361,7 @@ proof of privacy; only the DP-SGD guarantee is a bound.
 
 - [ ] Texas100 family of 64 models.
 - [ ] 256 reference models on CIFAR-10 with a WRN-16-4, as in the LiRA paper.
+- [ ] DP-SGD fine-tuning of the canary language model at epsilon 8 and 1.
 - [ ] Auditing DP-SGD with canary gradients (lower bounds on epsilon from attacks).
 
 ## License

@@ -1,7 +1,7 @@
 """Canary exposure, extraction and membership inference on a fine-tuned language model.
 
 Usage:
-    uv run --no-sync python benchmarks/lm_canaries.py [--models base ft dp8]
+    uv run --no-sync python benchmarks/lm_canaries.py [--models base ft dp8] [--device cpu]
 
 Pythia-70M (deduplicated) is fine-tuned on a seeded half of the WikiText-2 training
 paragraphs plus 24 fictional canaries inserted 1, 2, 4, 8, 16 or 32 times (four
@@ -58,8 +58,8 @@ DELTA = 1e-5
 # Candidates per forward pass in the exact exposure enumeration (bounds peak memory; 512
 # ran out of the 2.1 GB MPS cap right after fine-tuning).
 ENUM_BATCH = 256
-# Sequences per forward pass when scoring (8 x 128 tokens x 50k vocabulary logits = 0.2 GB).
-SCORE_BATCH = 8
+# Sequences per forward pass when scoring (4 x 128 tokens x 50k vocabulary logits = 0.1 GB).
+SCORE_BATCH = 4
 # Examples per forward/backward pass in fine-tuning (gradients are accumulated per batch).
 TRAIN_CHUNK = 4
 # Five-digit secrets (10^5 candidates): exact enumeration takes about 30 s per canary on
@@ -78,6 +78,14 @@ def _free(model: Any) -> None:
     """Return cached MPS blocks to the system so peak memory stays near the working set."""
     if next(model.parameters()).device.type == "mps":
         torch.mps.empty_cache()
+
+
+def _mps_mb() -> str:
+    if not torch.backends.mps.is_available():
+        return "cpu"
+    alloc = torch.mps.current_allocated_memory() / 2**20
+    driver = torch.mps.driver_allocated_memory() / 2**20
+    return f"MPS {alloc:.0f} MB allocated, {driver:.0f} MB driver"
 
 
 def build_data(tok: Any) -> dict[str, Any]:
@@ -158,6 +166,9 @@ def evaluate(
         )
     res["canaries"] = rows
     res["canary_seconds"] = time.perf_counter() - t0
+    gc.collect()
+    _free(model)
+    print(f"  {name} canaries done, {_mps_mb()}", flush=True)
 
     # Sequence membership inference.
     rng = np.random.default_rng(2)
@@ -233,8 +244,9 @@ def extraction(name: str, model: Any, base: Any, tok: Any, d: dict[str, Any]) ->
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", nargs="+", default=list(MODELS))
+    ap.add_argument("--device", default="auto", help="auto (MPS when available), mps or cpu")
     args = ap.parse_args()
-    dev = get_device()
+    dev = get_device(args.device)
     base, tok = lm.load_model(dev)
     d = build_data(tok)
     print(

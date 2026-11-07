@@ -9,8 +9,9 @@
   - Purchase100: an MLP 600-512-256-128-100 (0.48M parameters), 64 models on 98,662 records each,
     and DP-SGD families at epsilon 1 and 8.
   - Language model: Pythia-70M (deduplicated, EleutherAI) fine-tuned on WikiText-2 with 24
-    fictional canaries, without DP and with DP-SGD at epsilon 8 and 1.
-- **Version and date:** v0.1.0, November 2026.
+    fictional canaries, without DP (the DP-SGD fine-tuning presets exist in the benchmark script
+    but were not run within the time budget).
+- **Version and date:** v0.2.0, November 2026.
 
 ## Intended use
 - Measuring privacy leakage of small models and the protection DP-SGD gives, and teaching the

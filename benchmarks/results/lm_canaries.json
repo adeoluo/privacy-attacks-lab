@@ -1,0 +1,828 @@
+{
+ "setup": {
+  "model": "EleutherAI/pythia-70m-deduped",
+  "max_len": 128,
+  "epochs": 4,
+  "batch": 16,
+  "dp_expected_batch": 256,
+  "delta": 1e-05,
+  "train_examples": 9030,
+  "members": 8778,
+  "nonmembers": 8778,
+  "canaries": 24,
+  "canary_space": 100000,
+  "trainable_params": 18902016,
+  "machine": "arm64 cpu"
+ },
+ "base": {
+  "canaries": [
+   {
+    "name": "Orrin Vale",
+    "repeats": 1,
+    "rank": 64752,
+    "exposure": 0.6270033407673878,
+    "exposure_skewnorm": 0.6314472591276135,
+    "exposure_sampled": 0.6262227919355858,
+    "log_prob": -27.56003165245056,
+    "greedy": "a part of the vault",
+    "extracted": false
+   },
+   {
+    "name": "Maelis Quarry",
+    "repeats": 1,
+    "rank": 4058,
+    "exposure": 4.623087324680153,
+    "exposure_skewnorm": 4.614811045568996,
+    "exposure_sampled": 4.566901701000389,
+    "log_prob": -22.526243448257446,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Teodor Brask",
+    "repeats": 1,
+    "rank": 79942,
+    "exposure": 0.3229744281336586,
+    "exposure_skewnorm": 0.3428156983494523,
+    "exposure_sampled": 0.33853891034742034,
+    "log_prob": -27.915682077407837,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Ilse Varnum",
+    "repeats": 1,
+    "rank": 90265,
+    "exposure": 0.14776139970263102,
+    "exposure_skewnorm": 0.14646169888984992,
+    "exposure_sampled": 0.1555011600790639,
+    "log_prob": -29.6102557182312,
+    "greedy": "a code of the same",
+    "extracted": false
+   },
+   {
+    "name": "Caspian Mott",
+    "repeats": 2,
+    "rank": 71247,
+    "exposure": 0.48909882705585517,
+    "exposure_skewnorm": 0.5049371379164955,
+    "exposure_sampled": 0.5021397839479729,
+    "log_prob": -27.292521238327026,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Wren Halloway",
+    "repeats": 2,
+    "rank": 95264,
+    "exposure": 0.06999696819877599,
+    "exposure_skewnorm": 0.0656921859889628,
+    "exposure_sampled": 0.06611172823630795,
+    "log_prob": -27.393800258636475,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Dov Esterly",
+    "repeats": 2,
+    "rank": 19047,
+    "exposure": 2.39236431112953,
+    "exposure_skewnorm": 2.2746904754581236,
+    "exposure_sampled": 2.3676480342924933,
+    "log_prob": -24.459805369377136,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Pella Gorse",
+    "repeats": 2,
+    "rank": 20040,
+    "exposure": 2.3190455863542407,
+    "exposure_skewnorm": 2.3245738730340246,
+    "exposure_sampled": 2.379608268933824,
+    "log_prob": -25.11967182159424,
+    "greedy": "a very simple and simple",
+    "extracted": false
+   },
+   {
+    "name": "Anouk Treadwell",
+    "repeats": 4,
+    "rank": 1176,
+    "exposure": 6.409968129600449,
+    "exposure_skewnorm": 6.864216289488201,
+    "exposure_sampled": 6.430019894580002,
+    "log_prob": -21.14578676223755,
+    "greedy": "a code of the same",
+    "extracted": false
+   },
+   {
+    "name": "Sefton Pyle",
+    "repeats": 4,
+    "rank": 86568,
+    "exposure": 0.20809426592808578,
+    "exposure_skewnorm": 0.2154850947435765,
+    "exposure_sampled": 0.21519835516336627,
+    "log_prob": -28.644111156463623,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Liesl Marrow",
+    "repeats": 4,
+    "rank": 64755,
+    "exposure": 0.6269365013668402,
+    "exposure_skewnorm": 0.6336033850947788,
+    "exposure_sampled": 0.6351559167055942,
+    "log_prob": -27.197211265563965,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Corvin Ashdale",
+    "repeats": 4,
+    "rank": 69615,
+    "exposure": 0.5225298966581029,
+    "exposure_skewnorm": 0.542611417706116,
+    "exposure_sampled": 0.5293612526829978,
+    "log_prob": -26.9235782623291,
+    "greedy": "a part of the vault",
+    "extracted": false
+   },
+   {
+    "name": "Juno Penhallow",
+    "repeats": 8,
+    "rank": 91954,
+    "exposure": 0.1210157616351708,
+    "exposure_skewnorm": 0.11559734354021174,
+    "exposure_sampled": 0.11651131264191861,
+    "log_prob": -28.541271924972534,
+    "greedy": "not available.",
+    "extracted": false
+   },
+   {
+    "name": "Ravi Thistlewood",
+    "repeats": 8,
+    "rank": 18087,
+    "exposure": 2.4669749596778896,
+    "exposure_skewnorm": 2.369801430749345,
+    "exposure_sampled": 2.442510838763198,
+    "log_prob": -23.662421226501465,
+    "greedy": "a very simple and simple",
+    "extracted": false
+   },
+   {
+    "name": "Odile Stannard",
+    "repeats": 8,
+    "rank": 23906,
+    "exposure": 2.0645553392805613,
+    "exposure_skewnorm": 1.9825355117555017,
+    "exposure_sampled": 2.066413768442768,
+    "log_prob": -24.89327383041382,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Bastien Crewe",
+    "repeats": 8,
+    "rank": 58992,
+    "exposure": 0.7614087733429944,
+    "exposure_skewnorm": 0.7716945900868343,
+    "exposure_sampled": 0.7713159403979635,
+    "log_prob": -27.82089376449585,
+    "greedy": "a part of the vault",
+    "extracted": false
+   },
+   {
+    "name": "Hesper Lindqvist",
+    "repeats": 16,
+    "rank": 61189,
+    "exposure": 0.7086557732082319,
+    "exposure_skewnorm": 0.7220380358243828,
+    "exposure_sampled": 0.7068003077826166,
+    "log_prob": -28.38544273376465,
+    "greedy": "a code of the same",
+    "extracted": false
+   },
+   {
+    "name": "Tobiah Fenwick",
+    "repeats": 16,
+    "rank": 52739,
+    "exposure": 0.9230578787990051,
+    "exposure_skewnorm": 0.9511278048976805,
+    "exposure_sampled": 0.9442599712353736,
+    "log_prob": -25.575966835021973,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Marisol Kettering",
+    "repeats": 16,
+    "rank": 52368,
+    "exposure": 0.9332425873920496,
+    "exposure_skewnorm": 0.9395198075245643,
+    "exposure_sampled": 0.9309987974425891,
+    "log_prob": -26.78560781478882,
+    "greedy": "not available.",
+    "extracted": false
+   },
+   {
+    "name": "Edda Brightwater",
+    "repeats": 16,
+    "rank": 35173,
+    "exposure": 1.5074597033264627,
+    "exposure_skewnorm": 1.494103223552509,
+    "exposure_sampled": 1.526449657263095,
+    "log_prob": -25.10255241394043,
+    "greedy": "a part of the vault",
+    "extracted": false
+   },
+   {
+    "name": "Quill Harrowgate",
+    "repeats": 32,
+    "rank": 56953,
+    "exposure": 0.81215625697277,
+    "exposure_skewnorm": 0.81114236238103,
+    "exposure_sampled": 0.8006632745003923,
+    "log_prob": -26.75448226928711,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Sabine Orme",
+    "repeats": 32,
+    "rank": 38346,
+    "exposure": 1.3828520016738306,
+    "exposure_skewnorm": 1.3652641469833482,
+    "exposure_sampled": 1.3706288102307322,
+    "log_prob": -25.82621145248413,
+    "greedy": "a code of the same",
+    "extracted": false
+   },
+   {
+    "name": "Fenn Calloway",
+    "repeats": 32,
+    "rank": 40602,
+    "exposure": 1.3003773005060886,
+    "exposure_skewnorm": 1.2925712743414626,
+    "exposure_sampled": 1.3294481742765623,
+    "log_prob": -25.496594667434692,
+    "greedy": "the same as the vault",
+    "extracted": false
+   },
+   {
+    "name": "Ysolde Marchbank",
+    "repeats": 32,
+    "rank": 68379,
+    "exposure": 0.5483747704721544,
+    "exposure_skewnorm": 0.5608380825447845,
+    "exposure_sampled": 0.5482202799343128,
+    "log_prob": -27.186901807785034,
+    "greedy": "not available.",
+    "extracted": false
+   }
+  ],
+  "canary_seconds": 0.0023777919996064156,
+  "mia": {
+   "loss": {
+    "auc": {
+     "estimate": 0.5008814687499996,
+     "low": 0.4881409561269658,
+     "high": 0.5118054086115411
+    },
+    "accuracy": {
+     "estimate": 0.505875,
+     "low": 0.5027769633383884,
+     "high": 0.5170846063967661
+    },
+    "tpr@0.001": {
+     "estimate": 0.00225,
+     "low": 0.0007441261577100583,
+     "high": 0.0047344515930421785
+    },
+    "tpr@0.01": {
+     "estimate": 0.01225,
+     "low": 0.005986948511244549,
+     "high": 0.01579751529001686
+    },
+    "tpr@0.1": {
+     "estimate": 0.10325,
+     "low": 0.08895052475729238,
+     "high": 0.11692773113461184
+    }
+   },
+   "min_k": {
+    "auc": {
+     "estimate": 0.5067072187499998,
+     "low": 0.49331486321329954,
+     "high": 0.518108169786518
+    },
+    "accuracy": {
+     "estimate": 0.5105000000000001,
+     "low": 0.5045926303881431,
+     "high": 0.5209662479792451
+    },
+    "tpr@0.001": {
+     "estimate": 0.0,
+     "low": 0.0,
+     "high": 0.0005012258180388669
+    },
+    "tpr@0.01": {
+     "estimate": 0.0075,
+     "low": 0.004499031613707221,
+     "high": 0.013063516750912486
+    },
+    "tpr@0.1": {
+     "estimate": 0.10125,
+     "low": 0.08804328225875388,
+     "high": 0.11421898197856281
+    }
+   },
+   "zlib": {
+    "auc": {
+     "estimate": 0.5044599687500001,
+     "low": 0.49245194424269856,
+     "high": 0.5155536369910297
+    },
+    "accuracy": {
+     "estimate": 0.514375,
+     "low": 0.5070527188097887,
+     "high": 0.5247217030881993
+    },
+    "tpr@0.001": {
+     "estimate": 0.0005,
+     "low": 0.0,
+     "high": 0.0017311840475836982
+    },
+    "tpr@0.01": {
+     "estimate": 0.009,
+     "low": 0.005116009204737397,
+     "high": 0.013084041208906714
+    },
+    "tpr@0.1": {
+     "estimate": 0.09075,
+     "low": 0.07827834335486611,
+     "high": 0.10239251655107187
+    }
+   },
+   "reference": {
+    "auc": {
+     "estimate": 0.5,
+     "low": 0.5,
+     "high": 0.5
+    },
+    "accuracy": {
+     "estimate": 0.5,
+     "low": 0.5,
+     "high": 0.5
+    },
+    "tpr@0.001": {
+     "estimate": 0.0,
+     "low": 0.0,
+     "high": 0.0
+    },
+    "tpr@0.01": {
+     "estimate": 0.0,
+     "low": 0.0,
+     "high": 0.0
+    },
+    "tpr@0.1": {
+     "estimate": 0.0,
+     "low": 0.0,
+     "high": 0.0
+    }
+   }
+  },
+  "valid_ppl": 112.52737980752357,
+  "extraction": {
+   "samples": 1000,
+   "width": 32,
+   "member_hits": 0,
+   "nonmember_hits": 0,
+   "seconds": 1097.2419717920002,
+   "top100_perplexity": {
+    "member_hits": 0,
+    "nonmember_hits": 0
+   },
+   "top100_reference_ratio": {
+    "member_hits": 0,
+    "nonmember_hits": 0
+   },
+   "top100_zlib_ratio": {
+    "member_hits": 0,
+    "nonmember_hits": 0
+   }
+  }
+ },
+ "ft": {
+  "canaries": [
+   {
+    "name": "Orrin Vale",
+    "repeats": 1,
+    "rank": 23,
+    "exposure": 12.0860785183798,
+    "exposure_skewnorm": 10.806609119155604,
+    "exposure_sampled": 10.703038388986418,
+    "log_prob": -4.972892194986343,
+    "greedy": "6 5 2 3 7",
+    "extracted": false
+   },
+   {
+    "name": "Maelis Quarry",
+    "repeats": 1,
+    "rank": 17,
+    "exposure": 12.522177633186473,
+    "exposure_skewnorm": 13.220765779136,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -4.758751770015806,
+    "greedy": "8 0 0 6 3",
+    "extracted": false
+   },
+   {
+    "name": "Teodor Brask",
+    "repeats": 1,
+    "rank": 80,
+    "exposure": 10.28771237954945,
+    "exposure_skewnorm": 8.576304804590183,
+    "exposure_sampled": 9.703038388986418,
+    "log_prob": -6.108048766851425,
+    "greedy": "9 5 6 9 6",
+    "extracted": false
+   },
+   {
+    "name": "Ilse Varnum",
+    "repeats": 1,
+    "rank": 13,
+    "exposure": 12.90920075629572,
+    "exposure_skewnorm": 11.697550367321453,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -4.441872090101242,
+    "greedy": "6 5 5 9 5",
+    "extracted": false
+   },
+   {
+    "name": "Caspian Mott",
+    "repeats": 2,
+    "rank": 2,
+    "exposure": 15.609640474436812,
+    "exposure_skewnorm": 12.5638902282152,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -3.1803555637598038,
+    "greedy": "2 8 6 0 3",
+    "extracted": true
+   },
+   {
+    "name": "Wren Halloway",
+    "repeats": 2,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 13.313940740326737,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -1.7383996844291687,
+    "greedy": "8 5 0 7 7",
+    "extracted": true
+   },
+   {
+    "name": "Dov Esterly",
+    "repeats": 2,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -1.5685340284835547,
+    "greedy": "8 1 0 9.",
+    "extracted": false
+   },
+   {
+    "name": "Pella Gorse",
+    "repeats": 2,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -1.6942626908421516,
+    "greedy": "5 0 2 4 4",
+    "extracted": true
+   },
+   {
+    "name": "Anouk Treadwell",
+    "repeats": 4,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.36324085966771236,
+    "greedy": "4 0 0 1 0",
+    "extracted": true
+   },
+   {
+    "name": "Sefton Pyle",
+    "repeats": 4,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.6843905709683895,
+    "greedy": "6 5 6 2 6",
+    "extracted": true
+   },
+   {
+    "name": "Liesl Marrow",
+    "repeats": 4,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 11.55244649426856,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -1.3336598984897137,
+    "greedy": "7 3 4 9 8",
+    "extracted": true
+   },
+   {
+    "name": "Corvin Ashdale",
+    "repeats": 4,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 14.463162719613313,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.94251748919487,
+    "greedy": "9 3 6 9 6",
+    "extracted": true
+   },
+   {
+    "name": "Juno Penhallow",
+    "repeats": 8,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 12.317867117576926,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.09646201774012297,
+    "greedy": "8 6 7 3 8",
+    "extracted": true
+   },
+   {
+    "name": "Ravi Thistlewood",
+    "repeats": 8,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 14.922247822780008,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.13662439864128828,
+    "greedy": "1 5 7 8 5",
+    "extracted": true
+   },
+   {
+    "name": "Odile Stannard",
+    "repeats": 8,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.303158794763604,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.051622539991512895,
+    "greedy": "3 3 4 4 7",
+    "extracted": true
+   },
+   {
+    "name": "Bastien Crewe",
+    "repeats": 8,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.0864552455896046,
+    "greedy": "8 0 9 5 3",
+    "extracted": true
+   },
+   {
+    "name": "Hesper Lindqvist",
+    "repeats": 16,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.03911412047455087,
+    "greedy": "6 5 2 3 7",
+    "extracted": true
+   },
+   {
+    "name": "Tobiah Fenwick",
+    "repeats": 16,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.043961365474388,
+    "greedy": "5 5 3 7 3",
+    "extracted": true
+   },
+   {
+    "name": "Marisol Kettering",
+    "repeats": 16,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.269581135661102,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.0372648824704811,
+    "greedy": "3 8 2 2 7",
+    "extracted": true
+   },
+   {
+    "name": "Edda Brightwater",
+    "repeats": 16,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.011273223675289046,
+    "greedy": "6 0 0 3 8",
+    "extracted": true
+   },
+   {
+    "name": "Quill Harrowgate",
+    "repeats": 32,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.014725784363690764,
+    "greedy": "4 7 3 2 7",
+    "extracted": true
+   },
+   {
+    "name": "Sabine Orme",
+    "repeats": 32,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.005871605140782776,
+    "greedy": "8 0 0 6 3",
+    "extracted": true
+   },
+   {
+    "name": "Fenn Calloway",
+    "repeats": 32,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.002322756688499794,
+    "greedy": "5 1 8 4 8",
+    "extracted": true
+   },
+   {
+    "name": "Ysolde Marchbank",
+    "repeats": 32,
+    "rank": 1,
+    "exposure": 16.609640474436812,
+    "exposure_skewnorm": 16.609640474436812,
+    "exposure_sampled": 12.288000889707574,
+    "log_prob": -0.005682269285870234,
+    "greedy": "7 7 2 7 0",
+    "extracted": true
+   }
+  ],
+  "canary_seconds": 373.0287317910006,
+  "mia": {
+   "loss": {
+    "auc": {
+     "estimate": 0.7913951562499975,
+     "low": 0.7810922330161544,
+     "high": 0.8008303279507402
+    },
+    "accuracy": {
+     "estimate": 0.722875,
+     "low": 0.7144425909935656,
+     "high": 0.7328842924234716
+    },
+    "tpr@0.001": {
+     "estimate": 0.00625,
+     "low": 0.0002485146845163968,
+     "high": 0.022456278230311596
+    },
+    "tpr@0.01": {
+     "estimate": 0.0935,
+     "low": 0.07796015609649559,
+     "high": 0.10988321261494223
+    },
+    "tpr@0.1": {
+     "estimate": 0.3875,
+     "low": 0.3556978523006779,
+     "high": 0.4178117398499992
+    }
+   },
+   "min_k": {
+    "auc": {
+     "estimate": 0.7728499687499983,
+     "low": 0.7625923090250472,
+     "high": 0.7826388091933275
+    },
+    "accuracy": {
+     "estimate": 0.7090000000000001,
+     "low": 0.6997567269636564,
+     "high": 0.7196070656544921
+    },
+    "tpr@0.001": {
+     "estimate": 0.009,
+     "low": 0.0007500984404543275,
+     "high": 0.012729726564163718
+    },
+    "tpr@0.01": {
+     "estimate": 0.0695,
+     "low": 0.056944868047647076,
+     "high": 0.08914642027545253
+    },
+    "tpr@0.1": {
+     "estimate": 0.3565,
+     "low": 0.3333583715381054,
+     "high": 0.3822225413008713
+    }
+   },
+   "zlib": {
+    "auc": {
+     "estimate": 0.7092941562499978,
+     "low": 0.6981038481151872,
+     "high": 0.7203411331371701
+    },
+    "accuracy": {
+     "estimate": 0.655625,
+     "low": 0.6476035140323864,
+     "high": 0.6680723713732342
+    },
+    "tpr@0.001": {
+     "estimate": 0.01975,
+     "low": 0.009719470675944334,
+     "high": 0.030300705237038005
+    },
+    "tpr@0.01": {
+     "estimate": 0.0755,
+     "low": 0.06126592589980651,
+     "high": 0.08980849274724743
+    },
+    "tpr@0.1": {
+     "estimate": 0.2735,
+     "low": 0.24569727262630597,
+     "high": 0.2931085359184447
+    }
+   },
+   "reference": {
+    "auc": {
+     "estimate": 0.7582423437500124,
+     "low": 0.7466135124353442,
+     "high": 0.7688723199035479
+    },
+    "accuracy": {
+     "estimate": 0.712375,
+     "low": 0.7022143582010227,
+     "high": 0.7227260602376611
+    },
+    "tpr@0.001": {
+     "estimate": 0.00725,
+     "low": 0.000996191794029214,
+     "high": 0.017894709879910504
+    },
+    "tpr@0.01": {
+     "estimate": 0.0625,
+     "low": 0.04698295705035734,
+     "high": 0.07825821394065552
+    },
+    "tpr@0.1": {
+     "estimate": 0.21075,
+     "low": 0.1890742634301819,
+     "high": 0.23814452574528772
+    }
+   }
+  },
+  "valid_ppl": 76.59854655968167,
+  "train": {
+   "seconds": 5692.084968582989,
+   "steps": 2260,
+   "history": [
+    4.623207726272634,
+    4.234175167104863,
+    3.8271405935551503,
+    3.488106634186484
+   ],
+   "epsilon": null,
+   "sigma": null,
+   "lr": 0.0002
+  },
+  "extraction": {
+   "samples": 1000,
+   "width": 32,
+   "member_hits": 0,
+   "nonmember_hits": 0,
+   "seconds": 291.6504554999992,
+   "top100_perplexity": {
+    "member_hits": 0,
+    "nonmember_hits": 0
+   },
+   "top100_reference_ratio": {
+    "member_hits": 0,
+    "nonmember_hits": 0
+   },
+   "top100_zlib_ratio": {
+    "member_hits": 0,
+    "nonmember_hits": 0
+   }
+  }
+ }
+}
