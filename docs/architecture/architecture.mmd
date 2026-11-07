@@ -1,38 +1,46 @@
----
-title: System Architecture - Privacy Attacks Lab
-config:
-  theme: base
-  themeVariables:
-    fontFamily: "Inter, system-ui, sans-serif"
-    primaryColor: "#F8FAFC"
-    primaryBorderColor: "#1E293B"
-    primaryTextColor: "#1E293B"
-    lineColor: "#64748B"
-    clusterBkg: "#E2E8F0"
-    clusterBorder: "#94A3B8"
----
 flowchart LR
+    classDef edge     fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
     classDef core     fill:#6366F1,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef data     fill:#10B981,stroke:#1E293B,color:#ffffff,stroke-width:1px;
-    classDef external fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
-    classDef danger   fill:#EF4444,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    User([User]):::external
-
-    subgraph Application["Application Service"]
-        API[API Layer]:::core
-        Core[Core Engine]:::core
-        Evaluation[Evaluation Harness]:::core
+    subgraph Interfaces["Interfaces"]
+        direction TB
+        Users([Researchers]):::edge
+        CLI["CLI<br/>epsilon, report"]:::edge
+        Bench["Benchmarks<br/>MIA, DP, LM"]:::edge
+        HTTP["HTTP service<br/>/roc /exposure"]:::core
+        Users --> CLI --> HTTP ~~~ Bench
     end
 
-    Cache[(Semantic Cache)]:::data
-    Store[(Datastore / Index)]:::data
-    LLM{{LLM Provider}}:::external
+    subgraph State["Data and state"]
+        direction TB
+        Datasets[("Datasets<br/>CIFAR-10, Purchase100")]:::data
+        Runs[("Run store<br/>masks, signals")]:::data
+        LMW[("Pythia-70M<br/>24 canaries")]:::data
+        Datasets ~~~ Runs ~~~ LMW
+    end
 
-    User -->|request| API
-    API --> Core
-    Core -->|lookup| Cache
-    Core -->|retrieve| Store
-    Core -->|completion| LLM
-    Core -.->|traces/metrics| Evaluation
-    Core -->|response| User
+    subgraph Core["Training and attacks"]
+        direction TB
+        Acct["Accountants<br/>RDP, PRV, GDP"]:::control
+        DPSGD["DP-SGD<br/>ghost clipping"]:::core
+        Shadow["Model families<br/>64 per dataset"]:::core
+        Attacks["Attacks<br/>LiRA, shadow, loss"]:::core
+        Canary["Canaries<br/>exposure"]:::core
+        Acct --> DPSGD --> Shadow --> Attacks ~~~ Canary
+    end
+
+    subgraph Obs["Evaluation and outputs"]
+        direction TB
+        ROC["ROC (Rust)<br/>TPR at low FPR"]:::obs
+        Boot["Bootstrap CIs<br/>seeds"]:::obs
+        Results["Results<br/>JSON, figures"]:::obs
+        Metrics["Metrics<br/>Prometheus text"]:::obs
+        ROC --> Boot --> Results ~~~ Metrics
+    end
+
+    Interfaces -->|configs, targets| Core
+    State -.->|examples, weights| Core
+    Core -->|member scores| Obs
