@@ -48,6 +48,7 @@ PRESETS: dict[str, ShadowSpec] = {
     ),
     # DP-SGD families for attack success against epsilon (same pool and masks scheme):
     # expected batch 1,024, 30 epochs; sigma is calibrated to the target epsilon at delta 1e-5.
+    # The reported families are the first 8 of the 16 masks (--models 0-7).
     **{
         f"purchase100-dp{eps:g}": ShadowSpec(
             "purchase100",

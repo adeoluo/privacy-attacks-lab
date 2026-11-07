@@ -93,6 +93,25 @@ cifar10` (same for `purchase100`). Raw results: [`mia_cifar10.json`](benchmarks/
   <img src="docs/figures/roc_log.png" alt="Log-scale ROC curves of every attack on CIFAR-10 and Purchase100" width="860">
 </p>
 
+### Defence: DP-SGD on Purchase100
+
+The same pool and attacks against families trained with DP-SGD (Poisson sampling, expected batch
+1,024, clipping norm 1, 30 epochs, noise calibrated with the RDP accountant at delta 1e-5). The DP
+families have 8 models each (about 8 minutes per model), so every attack has 7 references.
+
+| Training | Held-out accuracy | Loss AUC | Best TPR at 0.1% FPR | Best TPR at 1% FPR |
+|---|---:|---:|---:|---:|
+| Non-private (64 models) | 93.0% | 54.6% | 1.49% (LiRA online) | 6.66% (LiRA online) |
+| DP-SGD, epsilon 8.00 (sigma 0.718) | 67.9% | 55.7% | 0.13% (shadow) | 1.29% (LiRA offline) |
+
+At epsilon 8 the loss attack still separates members (AUC 55.7%, from the 76.3% train vs 67.9%
+held-out accuracy gap), but no attack beats chance at 0.1% FPR: the best is 0.13% against 0.10%
+for a random guess. The (epsilon, delta) bound on any attack at 0.1% FPR is vacuous at epsilon 8
+(99.97%), so the measured leakage is far below what the guarantee allows. With 7 references,
+LiRA's per-example variance is unreliable (online AUC 48.5%), and the authors' scoring code returns
+no score for examples without both IN and OUT references. Raw results:
+[`mia_purchase100-dp8.json`](benchmarks/results/mia_purchase100-dp8.json).
+
 ### Comparison with references
 
 | Check | Reference | Result | Verdict |
