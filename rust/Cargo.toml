@@ -1,6 +1,6 @@
 [package]
 name = "pal-rs"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Rust core of privacy-attacks-lab: Renyi DP accounting of the subsampled Gaussian mechanism and ROC metrics"
 license = "MIT"

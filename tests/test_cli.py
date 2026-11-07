@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+import privacy_attacks_lab
 from privacy_attacks_lab.cli import main
 
 
@@ -60,7 +61,7 @@ def test_module_entrypoint() -> None:
         text=True,
         check=True,
     )
-    assert "0.1.0" in res.stdout
+    assert privacy_attacks_lab.__version__ in res.stdout
 
 
 def _result_file(tmp_path: Path) -> Path:

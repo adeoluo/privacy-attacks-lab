@@ -4,7 +4,7 @@ title: "Privacy Attacks Lab"
 authors:
   - family-names: "Ogunnoiki"
     given-names: "Adeolu"
-version: 0.1.0
-date-released: 2026-01-01
+version: 0.2.0
+date-released: 2026-11-07
 license: MIT
-url: "REPO_URL"
+url: "https://github.com/adeoluo/privacy-attacks-lab"

@@ -1,6 +1,6 @@
 [project]
 name = "privacy-attacks-lab"
-version = "0.1.0"
+version = "0.2.0"
 description = "Membership inference attacks, DP-SGD with RDP and PRV accountants, and canary extraction from a small language model"
 readme = "README.md"
 requires-python = ">=3.11"
