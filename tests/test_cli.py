@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -60,3 +61,40 @@ def test_module_entrypoint() -> None:
         check=True,
     )
     assert "0.1.0" in res.stdout
+
+
+def _result_file(tmp_path: Path) -> Path:
+    row = {"auc": 0.7, "accuracy": 0.65, "tpr@0.001": 0.03, "tpr@0.01": 0.1, "tpr@0.1": 0.3}
+    data = {
+        "preset": "toy",
+        "num_models": 8,
+        "targets": [0, 1],
+        "table": {"loss": {**row, "tpr@0.001": 0.001}, "lira-online": row, "lira-online-ref": row},
+    }
+    path = tmp_path / "mia_toy.json"
+    path.write_text(json.dumps(data))
+    return path
+
+
+def test_report_table(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["report", str(_result_file(tmp_path))]) == 0
+    out = capsys.readouterr().out
+    assert "toy: 8 models, 2 targets" in out
+    lines = out.splitlines()
+    assert lines[-1].startswith("lira-online ")
+    assert "lira-online-ref" not in out
+    assert "3.00%" in lines[-1]
+
+
+def test_report_all_and_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    path = str(_result_file(tmp_path))
+    assert main(["report", path, "--all", "--json"]) == 0
+    rows = json.loads(capsys.readouterr().out)
+    assert set(rows) == {"loss", "lira-online", "lira-online-ref"}
+
+
+def test_report_rejects_file_without_table(tmp_path: Path) -> None:
+    path = tmp_path / "x.json"
+    path.write_text("{}")
+    assert main(["report", str(path)]) == 2
+    assert main(["report", str(tmp_path / "missing.json")]) == 2
