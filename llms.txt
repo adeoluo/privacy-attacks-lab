@@ -1,0 +1,53 @@
+# Privacy Attacks Lab
+
+> Membership inference attacks (LiRA, shadow models, calibrated loss), DP-SGD with RDP and PRV accountants checked against Opacus, and canary exposure and extraction from small language models.
+
+Languages: Python, Rust. License: MIT. Source: https://github.com/adeoluo/privacy-attacks-lab
+
+## Docs
+
+- [README](https://github.com/adeoluo/privacy-attacks-lab/blob/main/README.md): motivation, architecture, results, quickstart, design decisions, evaluation, responsible ai, limitations, roadmap
+- [AGENTS.md](https://github.com/adeoluo/privacy-attacks-lab/blob/main/AGENTS.md): layout, commands and conventions for changing the code
+- [Architecture diagram](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/architecture/architecture.mmd): Mermaid source of the component diagram
+- [Data Card - Privacy Attacks Lab](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/DATA_CARD.md)
+- [Definition of Done](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/DEFINITION_OF_DONE.md)
+- [Evaluation Report - Privacy Attacks Lab](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/EVALUATION_REPORT.md)
+- [Model Card - Privacy Attacks Lab](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/MODEL_CARD.md)
+- [Threat Model - Privacy Attacks Lab](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/THREAT_MODEL.md)
+- [ADR-0001: Record architecture decisions](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/adr/0001-record-architecture-decisions.md)
+- [ADR-0002: LiRA on one leave-one-out model family](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/adr/0002-lira-leave-one-out-model-family.md)
+- [ADR-0003: DP-SGD with three per-sample gradient engines, ghost clipping by default](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/adr/0003-dpsgd-per-sample-gradients.md)
+- [ADR-0004: RDP and PRV accountants in Python, hot loops in a Rust core](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/adr/0004-accountants-rdp-prv-rust.md)
+- [ADR-0005: Exact canary exposure by enumeration on a small language model](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/adr/0005-exact-canary-exposure.md)
+- [ADR-NNNN: <short title>](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/adr/template.md)
+- [Changelog](https://github.com/adeoluo/privacy-attacks-lab/blob/main/CHANGELOG.md): release history
+
+## Source
+
+- [rust/src/lib.rs](https://github.com/adeoluo/privacy-attacks-lab/blob/main/rust/src/lib.rs): Rust core of privacy-attacks-lab.
+- [rust/src/python.rs](https://github.com/adeoluo/privacy-attacks-lab/blob/main/rust/src/python.rs): PyO3 bindings, built by maturin into the `privacy_attacks_lab.pal_rs` module.
+- [rust/src/rdp.rs](https://github.com/adeoluo/privacy-attacks-lab/blob/main/rust/src/rdp.rs): Renyi DP of the Poisson subsampled Gaussian mechanism, its conversion to (epsilon, delta) and noise calibration.
+- [rust/src/roc.rs](https://github.com/adeoluo/privacy-attacks-lab/blob/main/rust/src/roc.rs): ROC analysis of membership inference scores and its bootstrap.
+- [src/privacy_attacks_lab/__init__.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/__init__.py): Privacy Attacks Lab - package root.
+- [src/privacy_attacks_lab/accountants/__init__.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/accountants/__init__.py): Privacy accountants for DP-SGD (the Poisson subsampled Gaussian mechanism).
+- [src/privacy_attacks_lab/accountants/gdp.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/accountants/gdp.py): Gaussian differential privacy (GDP) accounting by the central limit theorem.
+- [src/privacy_attacks_lab/accountants/prv.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/accountants/prv.py): Privacy random variable (PRV) accountant for the Poisson subsampled Gaussian mechanism.
+- [src/privacy_attacks_lab/accountants/rdp.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/accountants/rdp.py): Renyi differential privacy (RDP) of the Poisson subsampled Gaussian mechanism.
+- [src/privacy_attacks_lab/attacks/__init__.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/attacks/__init__.py): Membership inference attacks.
+- [src/privacy_attacks_lab/attacks/calibrated.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/attacks/calibrated.py): Difficulty-calibrated loss attack (Watson, Guo, Cormode and Sablayrolles, ICLR 2022).
+- [src/privacy_attacks_lab/attacks/lira.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/attacks/lira.py): The Likelihood Ratio Attack, LiRA (Carlini, Chien, Nasr, Song, Terzis and Tramer, S&P 2022).
+- [src/privacy_attacks_lab/attacks/lira_reference.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/attacks/lira_reference.py): LiRA scoring exactly as in the authors' released code, kept as a parity reference.
+- [src/privacy_attacks_lab/attacks/loss.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/attacks/loss.py): The loss-threshold attack (Yeom, Giacomelli, Fredrikson and Jha, CSF 2018).
+- [src/privacy_attacks_lab/attacks/shadow.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/attacks/shadow.py): The shadow-model attack (Shokri, Stronati, Song and Shmatikov, S&P 2017).
+- [src/privacy_attacks_lab/canary.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/canary.py): Canaries and exposure (Carlini, Liu, Erlingsson, Kos and Song, USENIX Security 2019).
+- [src/privacy_attacks_lab/cli.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/cli.py): Command line interface: ``python -m privacy_attacks_lab <command>``.
+- [src/privacy_attacks_lab/data.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/data.py): Datasets: CIFAR-10, Purchase100 and Texas100, converted once to compact ``.npz`` files.
+- [src/privacy_attacks_lab/dpsgd.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/dpsgd.py): DP-SGD (Abadi et al., CCS 2016), implemented directly on ``torch.func``.
+- [src/privacy_attacks_lab/evaluation.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/evaluation.py): Leave-one-out evaluation of membership inference attacks on a family of models.
+- [src/privacy_attacks_lab/lm.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/lm.py): A small causal language model fine-tuned on text with inserted canaries.
+- [src/privacy_attacks_lab/metrics.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/metrics.py): ROC metrics for membership inference: AUC, balanced accuracy and TPR at low FPR.
+- [src/privacy_attacks_lab/models.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/models.py): Small target and shadow models.
+- [src/privacy_attacks_lab/service.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/service.py): HTTP service: privacy accounting, attack metrics and canary exposure over JSON.
+- [src/privacy_attacks_lab/shadow.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/shadow.py): Train many models on random halves of a data pool and store their per-example signals.
+- [src/privacy_attacks_lab/signals.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/signals.py): Per-example signals that membership inference attacks read off a model's logits.
+- [src/privacy_attacks_lab/training.py](https://github.com/adeoluo/privacy-attacks-lab/blob/main/src/privacy_attacks_lab/training.py): Training and inference loops for target, shadow and reference models.
