@@ -54,6 +54,8 @@ DP_BATCH = 256
 DELTA = 1e-5
 # Candidates per forward pass in the exact exposure enumeration (bounds peak memory).
 ENUM_BATCH = 512
+# Sequences per forward pass when scoring (8 x 128 tokens x 50k vocabulary logits = 0.2 GB).
+SCORE_BATCH = 8
 # Five-digit secrets (10^5 candidates): exact enumeration takes about 30 s per canary on
 # the shared M1; six digits would take about 5 minutes per canary.
 SECRET_DIGITS = 5
@@ -105,10 +107,21 @@ def evaluate(
 ) -> dict[str, Any]:
     res: dict[str, Any] = {}
     # Canary exposure and extraction.
-    rng = np.random.default_rng(1)
     rows = []
     t0 = time.perf_counter()
-    for c in d["canaries"]:
+    # Finished canaries are kept in a side file so an interrupted run resumes.
+    SAVE.mkdir(parents=True, exist_ok=True)
+    partial = SAVE / f"{name}_canaries.jsonl"
+    done = (
+        {json.loads(x)["name"]: json.loads(x) for x in partial.read_text().splitlines() if x}
+        if partial.exists()
+        else {}
+    )
+    for k, c in enumerate(d["canaries"]):
+        if c.name in done:
+            rows.append(done[c.name])
+            continue
+        rng = np.random.default_rng([1, k])
         lp = lm.candidate_log_probs(
             model, tok, c.prefix.rstrip(" "), length=len(c.digits), batch_size=ENUM_BATCH
         )
@@ -130,6 +143,8 @@ def evaluate(
                 "extracted": greedy.strip() == c.secret,
             }
         )
+        with partial.open("a") as fh:
+            fh.write(json.dumps(rows[-1]) + "\n")
         print(
             f"  {name} {c.name:<18} r={c.repeats:<2} rank={rank:<7} exp={rows[-1]['exposure']:.2f} "
             f"greedy={greedy.strip()!r}",
@@ -145,7 +160,7 @@ def evaluate(
     texts = mem + non
     labels = np.r_[np.ones(4000, bool), np.zeros(4000, bool)]
     enc = lm.encode(tok, texts, MAX_LEN)
-    sc = lm.sequence_scores(model, enc)
+    sc = lm.sequence_scores(model, enc, batch_size=SCORE_BATCH)
     if "mia" not in base_cache:
         base_cache["mia"] = sc
     base = base_cache["mia"]
@@ -168,7 +183,7 @@ def evaluate(
 
     # Utility.
     val = lm.encode(tok, d["valid"], MAX_LEN)
-    vs = lm.sequence_scores(model, val)
+    vs = lm.sequence_scores(model, val, batch_size=SCORE_BATCH)
     vt = val.lengths.numpy()
     res["valid_ppl"] = float(math.exp((vs["loss"] * vt).sum() / vt.sum()))
     print(f"  {name} valid ppl={res['valid_ppl']:.2f}", flush=True)
@@ -188,8 +203,8 @@ def extraction(name: str, model: Any, base: Any, tok: Any, d: dict[str, Any]) ->
     data = lm.Tokenized(
         x, torch.from_numpy(samples.astype(np.int64)), torch.full((len(samples),), 96)
     )
-    ft = lm.sequence_scores(model, data)["loss"]
-    ref = lm.sequence_scores(base, data)["loss"]
+    ft = lm.sequence_scores(model, data, batch_size=SCORE_BATCH)["loss"]
+    ref = lm.sequence_scores(base, data, batch_size=SCORE_BATCH)["loss"]
     zl = lm.zlib_bits([tok.decode(s.tolist()) for s in samples])
     rank_by = {"perplexity": ft, "reference_ratio": ft / ref, "zlib_ratio": ft * 96 / zl}
     out: dict[str, Any] = {
@@ -250,7 +265,9 @@ def main() -> int:
         rng = np.random.default_rng(2)
         mem = [d["members"][i] for i in rng.choice(len(d["members"]), 4000, replace=False)]
         non = [d["nonmembers"][i] for i in rng.choice(len(d["nonmembers"]), 4000, replace=False)]
-        cache["mia"] = lm.sequence_scores(base, lm.encode(tok, mem + non, MAX_LEN))
+        cache["mia"] = lm.sequence_scores(
+            base, lm.encode(tok, mem + non, MAX_LEN), batch_size=SCORE_BATCH
+        )
     for name in args.models:
         spec = MODELS[name]
         if not spec["train"]:
@@ -267,24 +284,33 @@ def main() -> int:
         cfg = lm.LMTrainConfig(
             epochs=EPOCHS, batch_size=DP_BATCH if dp else BATCH, lr=spec["lr"], dp=dp
         )
-        print(f"fine-tuning {name} (sigma={sigma})", flush=True)
-        tr = lm.finetune(model, d["train"], cfg)
-        print(
-            f"  {name} trained in {tr.seconds:.0f}s, loss {tr.history}, eps={tr.epsilon}",
-            flush=True,
-        )
         SAVE.mkdir(parents=True, exist_ok=True)
-        trained = {n: p.detach().cpu() for n, p in model.named_parameters() if p.requires_grad}
-        torch.save(trained, SAVE / f"{name}.pt")
+        weights, info = SAVE / f"{name}.pt", SAVE / f"{name}_train.json"
+        if weights.exists() and info.exists():
+            # Resume: reuse the fine-tuned weights of an interrupted run.
+            model.load_state_dict(torch.load(weights, map_location=dev), strict=False)
+            train_info = json.loads(info.read_text())
+            print(f"loaded fine-tuned {name} from {weights}", flush=True)
+        else:
+            print(f"fine-tuning {name} (sigma={sigma})", flush=True)
+            tr = lm.finetune(model, d["train"], cfg)
+            print(
+                f"  {name} trained in {tr.seconds:.0f}s, loss {tr.history}, eps={tr.epsilon}",
+                flush=True,
+            )
+            trained = {n: p.detach().cpu() for n, p in model.named_parameters() if p.requires_grad}
+            torch.save(trained, weights)
+            train_info = {
+                "seconds": tr.seconds,
+                "steps": tr.steps,
+                "history": tr.history,
+                "epsilon": None if math.isinf(tr.epsilon) else tr.epsilon,
+                "sigma": sigma,
+                "lr": spec["lr"],
+            }
+            info.write_text(json.dumps(train_info) + "\n")
         r = evaluate(name, model, tok, d, cache)
-        r["train"] = {
-            "seconds": tr.seconds,
-            "steps": tr.steps,
-            "history": tr.history,
-            "epsilon": None if math.isinf(tr.epsilon) else tr.epsilon,
-            "sigma": sigma,
-            "lr": spec["lr"],
-        }
+        r["train"] = train_info
         r["extraction"] = extraction(name, model, base, tok, d)
         results[name] = r
         OUT.write_text(json.dumps(results, indent=1) + "\n")
