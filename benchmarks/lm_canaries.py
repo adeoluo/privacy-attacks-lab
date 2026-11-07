@@ -21,12 +21,15 @@ serves as the non-members. For each model the script measures
 - utility: perplexity on the WikiText-2 validation paragraphs.
 
 Results go to benchmarks/results/lm_canaries.json (merged per model, so models
-can be run one at a time).
+can be run one at a time). Fine-tuning saves its state after every epoch, finished
+canaries are kept in a side file, and finished weights are reused, so an
+interrupted run continues where it stopped.
 """
 
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import math
 import platform
@@ -52,8 +55,9 @@ EPOCHS = 4
 BATCH = 16
 DP_BATCH = 256
 DELTA = 1e-5
-# Candidates per forward pass in the exact exposure enumeration (bounds peak memory).
-ENUM_BATCH = 512
+# Candidates per forward pass in the exact exposure enumeration (bounds peak memory; 512
+# ran out of the 2.1 GB MPS cap right after fine-tuning).
+ENUM_BATCH = 256
 # Sequences per forward pass when scoring (8 x 128 tokens x 50k vocabulary logits = 0.2 GB).
 SCORE_BATCH = 8
 # Examples per forward/backward pass in fine-tuning (gradients are accumulated per batch).
@@ -289,6 +293,7 @@ def main() -> int:
             lr=spec["lr"],
             dp=dp,
             chunk=TRAIN_CHUNK,
+            checkpoint=SAVE / f"{name}_train.ckpt",
         )
         SAVE.mkdir(parents=True, exist_ok=True)
         weights, info = SAVE / f"{name}.pt", SAVE / f"{name}_train.json"
@@ -315,6 +320,9 @@ def main() -> int:
                 "lr": spec["lr"],
             }
             info.write_text(json.dumps(train_info) + "\n")
+            (SAVE / f"{name}_train.ckpt").unlink(missing_ok=True)
+            gc.collect()
+            _free(model)
         r = evaluate(name, model, tok, d, cache)
         r["train"] = train_info
         r["extraction"] = extraction(name, model, base, tok, d)

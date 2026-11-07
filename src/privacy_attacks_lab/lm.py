@@ -140,6 +140,9 @@ class LMTrainConfig:
     seed: int = 0
     chunk: int = 8
     dp: DPConfig | None = None
+    # When set, training state is saved after every epoch and an interrupted run
+    # resumes from the last finished epoch with identical batches and noise.
+    checkpoint: Path | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -164,12 +167,15 @@ def finetune(model: nn.Module, data: Tokenized, cfg: LMTrainConfig) -> LMTrainRe
     history: list[float] = []
     start = time.perf_counter()
     steps = 0
+    acc = Accountant()
     if cfg.dp is None:
         per_epoch = math.ceil(n / cfg.batch_size)
         sched = torch.optim.lr_scheduler.LambdaLR(
             opt, lambda s: min(1.0, (s + 1) / 50) * max(0.0, 1 - s / (cfg.epochs * per_epoch))
         )
-        for _ in range(cfg.epochs):
+        first, steps, history, prior = _resume(cfg.checkpoint, model, opt, sched, gen, acc)
+        start -= prior
+        for epoch in range(first, cfg.epochs):
             perm = torch.randperm(n, generator=gen)
             total, seen = 0.0, 0
             for s in range(0, n, cfg.batch_size):
@@ -185,18 +191,20 @@ def finetune(model: nn.Module, data: Tokenized, cfg: LMTrainConfig) -> LMTrainRe
                 seen += len(idx)
                 steps += 1
             history.append(total / seen)
+            _checkpoint(cfg.checkpoint, epoch, model, opt, sched, gen, acc, steps, history, start)
         _sync(dev)
         return LMTrainResult(time.perf_counter() - start, steps, history)
 
     dp = cfg.dp
     q = min(1.0, cfg.batch_size / n)
     per_epoch = max(1, round(1 / q))
-    acc = Accountant()
     total_steps = cfg.epochs * per_epoch
     sched = torch.optim.lr_scheduler.LambdaLR(
         opt, lambda s: min(1.0, (s + 1) / 10) * max(0.0, 1 - s / total_steps)
     )
-    for _ in range(cfg.epochs):
+    first, steps, history, prior = _resume(cfg.checkpoint, model, opt, sched, gen, acc)
+    start -= prior
+    for epoch in range(first, cfg.epochs):
         total, seen = 0.0, 0
         for idx in poisson_batches(n, q, per_epoch, gen):
             acc.step(dp.noise_multiplier, q)
@@ -221,9 +229,62 @@ def finetune(model: nn.Module, data: Tokenized, cfg: LMTrainConfig) -> LMTrainRe
             seen += len(idx)
             steps += 1
         history.append(total / max(seen, 1))
+        _checkpoint(cfg.checkpoint, epoch, model, opt, sched, gen, acc, steps, history, start)
     _sync(dev)
     eps = acc.epsilon(dp.delta) if dp.noise_multiplier > 0 else math.inf
     return LMTrainResult(time.perf_counter() - start, steps, history, eps, q)
+
+
+def _checkpoint(
+    path: Path | None,
+    epoch: int,
+    model: nn.Module,
+    opt: torch.optim.Optimizer,
+    sched: Any,
+    gen: torch.Generator,
+    acc: Accountant,
+    steps: int,
+    history: list[float],
+    start: float,
+) -> None:
+    """Save everything needed to continue after ``epoch`` (written atomically)."""
+    if path is None:
+        return
+    state = {
+        "epoch": epoch,
+        "model": {k: p.detach().cpu() for k, p in model.named_parameters() if p.requires_grad},
+        "opt": opt.state_dict(),
+        "sched": sched.state_dict(),
+        "gen": gen.get_state(),
+        "accountant": list(acc.history),
+        "steps": steps,
+        "history": list(history),
+        "seconds": time.perf_counter() - start,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    torch.save(state, tmp)
+    tmp.replace(path)
+
+
+def _resume(
+    path: Path | None,
+    model: nn.Module,
+    opt: torch.optim.Optimizer,
+    sched: Any,
+    gen: torch.Generator,
+    acc: Accountant,
+) -> tuple[int, int, list[float], float]:
+    """Restore a checkpoint if one exists; return (first epoch, steps, history, seconds)."""
+    if path is None or not path.exists():
+        return 0, 0, [], 0.0
+    state = torch.load(path, map_location="cpu", weights_only=False)
+    model.load_state_dict(state["model"], strict=False)
+    opt.load_state_dict(state["opt"])
+    sched.load_state_dict(state["sched"])
+    gen.set_state(state["gen"])
+    acc.history = [tuple(h) for h in state["accountant"]]
+    return state["epoch"] + 1, state["steps"], list(state["history"]), state["seconds"]
 
 
 def _sync(dev: torch.device) -> None:

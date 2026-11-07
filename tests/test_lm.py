@@ -161,6 +161,53 @@ def test_finetune_without_and_with_dp(tok: FakeTokenizer) -> None:
     assert res2.sample_rate == pytest.approx(0.25)
 
 
+class _InterruptError(Exception):
+    pass
+
+
+@pytest.mark.parametrize("private", [False, True])
+def test_finetune_resumes_from_epoch_checkpoint(
+    tok: FakeTokenizer, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, private: bool
+) -> None:
+    data = _corpus(tok)
+    dp = dpsgd.DPConfig(noise_multiplier=1.0, max_grad_norm=1.0) if private else None
+
+    def cfg(path: Path | None) -> lm.LMTrainConfig:
+        return lm.LMTrainConfig(
+            epochs=3, batch_size=8, lr=3e-3, chunk=4, dp=dp, checkpoint=path, seed=5
+        )
+
+    full = tiny_model()
+    lm.freeze_for_finetune(full)
+    ref = lm.finetune(full, data, cfg(None))
+
+    save = lm._checkpoint
+
+    def save_then_stop(*args: Any) -> None:
+        save(*args)
+        if args[1] == 0:
+            raise _InterruptError
+
+    ckpt = tmp_path / "train.ckpt"
+    first = tiny_model()
+    lm.freeze_for_finetune(first)
+    monkeypatch.setattr(lm, "_checkpoint", save_then_stop)
+    with pytest.raises(_InterruptError):
+        lm.finetune(first, data, cfg(ckpt))
+    monkeypatch.setattr(lm, "_checkpoint", save)
+    assert ckpt.exists()
+
+    resumed = tiny_model()
+    lm.freeze_for_finetune(resumed)
+    res = lm.finetune(resumed, data, cfg(ckpt))
+    assert res.steps == ref.steps
+    np.testing.assert_allclose(res.history, ref.history, rtol=1e-5)
+    if private:
+        assert res.epsilon == pytest.approx(ref.epsilon)
+    for (name, a), (_, b) in zip(full.named_parameters(), resumed.named_parameters(), strict=True):
+        torch.testing.assert_close(a, b, rtol=1e-5, atol=1e-6, msg=name)
+
+
 def test_sequence_scores_and_zlib(tok: FakeTokenizer) -> None:
     model = tiny_model()
     data = _corpus(tok)
