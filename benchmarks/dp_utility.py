@@ -96,6 +96,7 @@ def main() -> int:
     ap.add_argument("--clip", type=float, default=1.0)
     ap.add_argument("--epochs", type=int)
     ap.add_argument("--no-baselines", action="store_true")
+    ap.add_argument("--device", default="auto", help="auto (MPS when available), mps or cpu")
     args = ap.parse_args()
 
     p = dict(PRESETS[args.dataset])
@@ -103,7 +104,7 @@ def main() -> int:
         p["epochs"] = args.epochs
     ds = load(args.dataset)  # type: ignore[arg-type]
     tr, te = split(args.dataset, len(ds))
-    dev = get_device()
+    dev = get_device(args.device)
     data = DeviceData(ds, dev)
     n = len(tr)
     q = p["batch"] / n
