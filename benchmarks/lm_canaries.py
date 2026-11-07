@@ -56,6 +56,8 @@ DELTA = 1e-5
 ENUM_BATCH = 512
 # Sequences per forward pass when scoring (8 x 128 tokens x 50k vocabulary logits = 0.2 GB).
 SCORE_BATCH = 8
+# Examples per forward/backward pass in fine-tuning (gradients are accumulated per batch).
+TRAIN_CHUNK = 4
 # Five-digit secrets (10^5 candidates): exact enumeration takes about 30 s per canary on
 # the shared M1; six digits would take about 5 minutes per canary.
 SECRET_DIGITS = 5
@@ -282,7 +284,11 @@ def main() -> int:
             sigma = calibrate_noise(spec["eps"], DELTA, q, steps)
             dp = DPConfig(sigma, max_grad_norm=1.0, delta=DELTA)
         cfg = lm.LMTrainConfig(
-            epochs=EPOCHS, batch_size=DP_BATCH if dp else BATCH, lr=spec["lr"], dp=dp
+            epochs=EPOCHS,
+            batch_size=DP_BATCH if dp else BATCH,
+            lr=spec["lr"],
+            dp=dp,
+            chunk=TRAIN_CHUNK,
         )
         SAVE.mkdir(parents=True, exist_ok=True)
         weights, info = SAVE / f"{name}.pt", SAVE / f"{name}_train.json"
