@@ -88,6 +88,27 @@ small family, not evidence of protection. Result files:
 [`mia_purchase100-dp8.json`](../benchmarks/results/mia_purchase100-dp8.json),
 [`mia_purchase100-dp1.json`](../benchmarks/results/mia_purchase100-dp1.json).
 
+### Privacy and utility curve on Purchase100
+`dp_utility.py purchase100 --eps 1 2 4 8 --seeds 0 1 2 --device cpu`: one model per (setting, seed)
+on a seeded 80/20 split (157,859 train, 39,465 test records), MLP 600-512-256-128-100, 30 epochs,
+expected batch 1,024 (sample rate 0.0065, 4,620 steps), clipping norm 1, lr 1.0 with momentum 0.9;
+sigma calibrated with the RDP accountant at delta 1e-5. Mean (standard deviation) over 3 seeds:
+
+| Setting | sigma | eps RDP | eps PRV | eps GDP | Test accuracy | Train accuracy | Train time |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Non-private | | | | | 95.0% (0.1) | 99.4% | 94 s |
+| Clip only | 0 | | | | 92.0% (0.2) | 95.9% | 255 s |
+| DP-SGD | 0.659 | 8.00 | 7.08 | 6.07 | 69.5% (0.2) | 76.3% | 409 s |
+| DP-SGD | 0.841 | 4.00 | 3.60 | 3.28 | 61.3% (0.1) | 67.3% | 459 s |
+| DP-SGD | 1.188 | 2.00 | 1.84 | 1.76 | 43.4% (0.2) | 47.8% | 465 s |
+| DP-SGD | 1.943 | 1.00 | 0.92 | 0.90 | 22.5% (0.7) | 24.2% | 318 s |
+
+The utility curve and the attack results above use different training sets (80% vs 50% of the
+pool), so the sigmas differ for the same epsilon (0.659 vs 0.718 at epsilon 8). The hyperparameters are
+the same at every epsilon and were not tuned per epsilon; a per-epsilon search (and larger batches at small
+epsilon) would raise the low-epsilon accuracies, so the curve is a lower bound on what DP-SGD
+achieves with this architecture. Timings are wall clock on a shared machine.
+
 ### Comparison with published numbers (quoted, not rerun)
 Carlini et al. (2022) report 8.4% TPR at 0.1% FPR on CIFAR-10 (Table I; a wide ResNet,
 256 shadow models, 18 augmented queries) and 4.1% online and 1.4% offline on Purchase
@@ -129,6 +150,7 @@ scripts/download_data.sh
 python benchmarks/train_shadows.py cifar10 && python benchmarks/mia_benchmark.py cifar10
 python benchmarks/mia_benchmark.py cifar10 --queries first
 python benchmarks/train_shadows.py purchase100 && python benchmarks/mia_benchmark.py purchase100
+python benchmarks/dp_utility.py purchase100 --eps 1 2 4 8 --seeds 0 1 2 --device cpu
 python benchmarks/parity_speed.py
 python benchmarks/figures.py
 ```

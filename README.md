@@ -116,6 +116,36 @@ no longer useful: held-out accuracy falls to 13.0% (train 13.9%) on 100 classes 
 30 epochs. Raw results: [`mia_purchase100-dp8.json`](benchmarks/results/mia_purchase100-dp8.json),
 [`mia_purchase100-dp1.json`](benchmarks/results/mia_purchase100-dp1.json).
 
+### Privacy and utility of DP-SGD on Purchase100
+
+The cost of the guarantee: the same MLP trained once per target epsilon on a seeded 80% of
+Purchase100 (157,859 records) and tested on the other 39,465, three seeds each, on the CPU. DP-SGD
+uses Poisson sampling (expected batch 1,024, 4,620 steps over 30 epochs), clipping norm 1 and lr
+1.0; sigma is calibrated with the RDP accountant at delta 1e-5, and the PRV and GDP epsilons of
+the same schedule are recorded next to it. "Clip only" clips per-example gradients without noise,
+which separates the cost of clipping from the cost of noise.
+
+| Training | sigma | epsilon (RDP / PRV / GDP) | Test accuracy | Train accuracy |
+|---|---:|---:|---:|---:|
+| Non-private | | | 95.0% (0.1) | 99.4% |
+| Clip only | 0 | | 92.0% (0.2) | 95.9% |
+| DP-SGD | 0.659 | 8.00 / 7.08 / 6.07 | 69.5% (0.2) | 76.3% |
+| DP-SGD | 0.841 | 4.00 / 3.60 / 3.28 | 61.3% (0.1) | 67.3% |
+| DP-SGD | 1.188 | 2.00 / 1.84 / 1.76 | 43.4% (0.2) | 47.8% |
+| DP-SGD | 1.943 | 1.00 / 0.92 / 0.90 | 22.5% (0.7) | 24.2% |
+
+Mean over seeds 0, 1 and 2 (standard deviation in parentheses). Clipping alone costs 3.0 points;
+the noise costs the rest, 22.5 points at epsilon 8 and 69.5 points at epsilon 1. The PRV
+accountant certifies the same noise at an epsilon 8% to 12% lower than RDP (GDP is an asymptotic
+approximation, not an upper bound). Reproduce: `python benchmarks/dp_utility.py purchase100 --eps 1
+2 4 8 --seeds 0 1 2 --device cpu`; raw results:
+[`dp_utility_purchase100.jsonl`](benchmarks/results/dp_utility_purchase100.jsonl).
+
+<p align="center">
+  <img src="docs/figures/dp_utility.png" alt="Test accuracy of DP-SGD against epsilon on Purchase100" width="560">
+  <img src="docs/figures/dp_attack.png" alt="LiRA TPR at low FPR under DP-SGD against the bound implied by epsilon" width="560">
+</p>
+
 ### Comparison with references
 
 | Check | Reference | Result | Verdict |
@@ -195,7 +225,7 @@ Training families and attacking them:
 scripts/download_data.sh                                  # CIFAR-10, Purchase100, Texas100, WikiText-2
 python benchmarks/train_shadows.py purchase100            # 64 models into $PAL_DATA_DIR/runs/
 python benchmarks/mia_benchmark.py purchase100            # attack table, ROC, bootstrap, scaling
-python benchmarks/dp_utility.py purchase100 --eps 1 2 4 8 --seeds 0 1 2
+python benchmarks/dp_utility.py purchase100 --eps 1 2 4 8 --seeds 0 1 2 --device cpu
 python benchmarks/lm_canaries.py --models base ft dp8     # canary exposure and extraction
 python benchmarks/figures.py                              # figures from committed results
 ```
