@@ -11,10 +11,10 @@ small enough to fine-tune several times (with and without DP-SGD) within the 8 G
 
 ## Decision
 Fine-tune Pythia-70M (deduplicated) on half of the WikiText-2 training paragraphs with 24 fictional
-canaries ("the vault code of <fictional name> is d d d d d d") inserted 1 to 32 times. Compute every
-canary's rank exactly by scoring all 10^6 six-digit continuations (a digit trie: the model runs on
-all `10^d` partial secrets at each depth `d < 6` and next-digit log-probabilities are accumulated in
-float64, 111,111 forward passes in batches of 4,096), and report the skew-normal estimate from 5,000 sampled
+canaries ("the vault code of <fictional name> is d d d d d") inserted 1 to 32 times. Compute every
+canary's rank exactly by scoring all 10^5 five-digit continuations (a digit trie: the model runs on
+all `10^d` partial secrets at each depth `d < 5` and next-digit log-probabilities are accumulated in
+float64, 11,111 forward passes in batches of 512), and report the skew-normal estimate from 5,000 sampled
 candidates next to it. Train only the linear layers in the transformer blocks so the hook-based
 DP-SGD engine applies unchanged.
 
@@ -27,5 +27,10 @@ DP-SGD engine applies unchanged.
 
 ## Consequences
 - Exposure numbers are exact for this model, and the estimator's bias is measured, not assumed.
+- The secret space is 10^5 (maximum exposure 16.6 bits), smaller than the paper's 10^9 space with a
+  sampled estimate. Six digits were measured at about 5 minutes per canary per model on the shared
+  M1 (ten times the five-digit cost), too slow for 24 canaries and four models; the enumeration code
+  takes any length. A KV cache for the shared prefix was tried and gave no measurable speedup here,
+  so the simpler uncached version stays.
 - Freezing embeddings and norms changes the fine-tuning recipe slightly; it is the same for the
   non-private and DP runs, so the comparison is fair.

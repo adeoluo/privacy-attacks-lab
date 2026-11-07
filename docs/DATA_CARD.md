@@ -39,8 +39,8 @@ redistributed in the repository; CI uses small synthetic fixtures.
   tokenizer and truncated to 128 tokens.
 
 ## Canaries (synthetic)
-24 fictional sentences of the form "the vault code of <fictional name> is d d d d d d", with random
-six-digit secrets, inserted 1, 2, 4, 8, 16 or 32 times (four canaries per level). Names are invented;
+24 fictional sentences of the form "the vault code of <fictional name> is d d d d d", with random
+five-digit secrets, inserted 1, 2, 4, 8, 16 or 32 times (four canaries per level). Names are invented;
 no real person, account or secret is used.
 
 ## Known biases and gaps

@@ -8,7 +8,7 @@ paragraphs plus 24 fictional canaries inserted 1, 2, 4, 8, 16 or 32 times (four
 canaries per level). The other half of the paragraphs never trains the model and
 serves as the non-members. For each model the script measures
 
-- canary exposure, exactly, by enumerating all 10^6 six-digit secrets, and the
+- canary exposure, exactly, by enumerating all 10^5 five-digit secrets, and the
   skew-normal estimate from 5,000 sampled candidates (Carlini et al. 2019);
 - extraction: whether greedy decoding after the canary prefix emits the secret;
 - sequence membership inference on 4,000 members and 4,000 non-members: loss,
@@ -52,6 +52,11 @@ EPOCHS = 4
 BATCH = 16
 DP_BATCH = 256
 DELTA = 1e-5
+# Candidates per forward pass in the exact exposure enumeration (bounds peak memory).
+ENUM_BATCH = 512
+# Five-digit secrets (10^5 candidates): exact enumeration takes about 30 s per canary on
+# the shared M1; six digits would take about 5 minutes per canary.
+SECRET_DIGITS = 5
 
 MODELS: dict[str, dict[str, Any]] = {
     "base": {"train": False},
@@ -59,6 +64,12 @@ MODELS: dict[str, dict[str, Any]] = {
     "dp8": {"train": True, "eps": 8.0, "lr": 1e-3},
     "dp1": {"train": True, "eps": 1.0, "lr": 1e-3},
 }
+
+
+def _free(model: Any) -> None:
+    """Return cached MPS blocks to the system so peak memory stays near the working set."""
+    if next(model.parameters()).device.type == "mps":
+        torch.mps.empty_cache()
 
 
 def build_data(tok: Any) -> dict[str, Any]:
@@ -69,7 +80,7 @@ def build_data(tok: Any) -> dict[str, Any]:
     half = len(train) // 2
     members = [train[i] for i in np.sort(perm[:half])]
     nonmembers = [train[i] for i in np.sort(perm[half:])]
-    canaries = canary.make_canaries()
+    canaries = canary.make_canaries(length=SECRET_DIGITS)
     docs, which = canary.insert(members, canaries, seed=0)
     return {
         "canaries": canaries,
@@ -98,7 +109,10 @@ def evaluate(
     rows = []
     t0 = time.perf_counter()
     for c in d["canaries"]:
-        lp = lm.candidate_log_probs(model, tok, c.prefix.rstrip(" "), length=len(c.digits))
+        lp = lm.candidate_log_probs(
+            model, tok, c.prefix.rstrip(" "), length=len(c.digits), batch_size=ENUM_BATCH
+        )
+        _free(model)
         rank = canary.rank_of(lp, c.index)
         sample_idx = rng.choice(len(lp), 5000, replace=False)
         est = canary.exposure_from_sample(lp[c.index], lp[sample_idx], len(lp))
@@ -219,7 +233,7 @@ def main() -> int:
         "members": len(d["members"]),
         "nonmembers": len(d["nonmembers"]),
         "canaries": len(d["canaries"]),
-        "canary_space": 10**6,
+        "canary_space": 10**SECRET_DIGITS,
         "trainable_params": None,
         "machine": f"{platform.machine()} {dev.type}",
     }
@@ -227,6 +241,8 @@ def main() -> int:
     # The base model's sequence scores are the reference for the calibrated attack.
     base_res = evaluate("base", base, tok, d, cache) if "base" in args.models else None
     if base_res is not None:
+        results["base"] = base_res
+        OUT.write_text(json.dumps(results, indent=1) + "\n")
         base_res["extraction"] = extraction("base", base, base, tok, d)
         results["base"] = base_res
         OUT.write_text(json.dumps(results, indent=1) + "\n")

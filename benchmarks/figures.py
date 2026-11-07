@@ -205,7 +205,7 @@ def exposure_figure() -> None:
             color=colors.get(name, "k"),
             label=labels[name],
         )
-    ax.axhline(math.log2(1e6), color="k", ls=":", lw=1, label="log2(10^6): fully extracted")
+    ax.axhline(math.log2(1e5), color="k", ls=":", lw=1, label="log2(10^5): fully extracted")
     ax.set_xscale("log", base=2)
     ax.set_xlabel("Times the canary was inserted")
     ax.set_ylabel("Exposure (bits, exact)")
