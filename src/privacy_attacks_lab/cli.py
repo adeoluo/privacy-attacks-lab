@@ -89,6 +89,40 @@ def cmd_max_tpr(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:  # pragma: no cover
+    from privacy_attacks_lab.service import serve
+
+    serve(args.host, args.port)
+    return 0
+
+
+REPORT_METRICS = ("auc", "accuracy", "tpr@0.001", "tpr@0.01", "tpr@0.1")
+
+
+def cmd_report(args: argparse.Namespace) -> int:
+    """Print the attack table of a ``benchmarks/results/mia_<preset>.json`` file."""
+    with open(args.path) as fh:
+        data = json.load(fh)
+    table = data.get("table")
+    if not isinstance(table, dict) or not table:
+        raise ValueError(f"{args.path} has no attack table")
+    rows = {k: v for k, v in table.items() if args.all or not k.endswith(("-ref", "-ref-fixed"))}
+    if args.json:
+        print(json.dumps(rows, indent=2, sort_keys=True))
+        return 0
+    models = data.get("num_models", "?")
+    targets = len(data.get("targets", [])) or "?"
+    print(f"{data.get('preset', '?')}: {models} models, {targets} targets (mean over targets)")
+    names = ("AUC", "bal acc", "TPR@0.1%", "TPR@1%", "TPR@10%")
+    width = max(len(k) for k in rows)
+    print(f"{'attack':<{width}}  " + "  ".join(f"{n:>8}" for n in names))
+    order = sorted(rows, key=lambda k: rows[k].get(args.sort, 0.0))
+    for name in order:
+        vals = "  ".join(f"{100 * rows[name][m]:>7.2f}%" for m in REPORT_METRICS)
+        print(f"{name:<{width}}  {vals}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="privacy-attacks-lab",
@@ -115,6 +149,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--fpr", type=float, action="append", default=None)
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_max_tpr, fpr_default=(0.001, 0.01, 0.1))
+
+    p = sub.add_parser("serve", help="HTTP service (accounting, ROC metrics, exposure)")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8000)
+    p.set_defaults(func=cmd_serve)
+
+    p = sub.add_parser("report", help="print the attack table of a mia_<preset>.json result")
+    p.add_argument("path")
+    p.add_argument("--sort", choices=REPORT_METRICS, default="tpr@0.001")
+    p.add_argument("--all", action="store_true", help="include the reference LiRA scoring")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_report)
 
     for register in _EXTRA_COMMANDS:
         register(sub)
