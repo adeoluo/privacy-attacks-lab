@@ -3,14 +3,14 @@
 A canary is a fictional secret, such as ``"the vault code of Orrin Vale is 4 8 1 9 0 3"``,
 inserted ``r`` times into a model's training text. Its *exposure* measures how much
 more likely the model finds the inserted secret than the other candidates of the
-same format. With ``R`` the candidate space (here ``10^6`` digit strings) and
+same format. With ``R`` the candidate space (``10^n`` strings of ``n`` digits) and
 ``rank`` the canary's position when all candidates are sorted by the model's
 log-perplexity (1 = most likely),
 
     exposure = log2 |R| - log2 rank.
 
 Exposure is 0 for the least likely candidate, about 1 for a typical one (a random
-secret ranks in the middle) and ``log2 |R|`` (19.9 for a million candidates) when the
+secret ranks in the middle) and ``log2 |R|`` (16.6 for 10^5 candidates) when the
 canary is the model's single most likely completion, at which point greedy
 decoding extracts it.
 
