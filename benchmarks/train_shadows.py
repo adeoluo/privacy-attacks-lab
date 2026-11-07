@@ -14,7 +14,8 @@ import argparse
 import sys
 from dataclasses import replace
 
-from privacy_attacks_lab.data import DEFAULT_DATA_DIR
+from privacy_attacks_lab.accountants import calibrate_noise
+from privacy_attacks_lab.data import DEFAULT_DATA_DIR, load
 from privacy_attacks_lab.shadow import ShadowRun, ShadowSpec
 
 PRESETS: dict[str, ShadowSpec] = {
@@ -45,6 +46,22 @@ PRESETS: dict[str, ShadowSpec] = {
         weight_decay=1e-5,
         queries="none",
     ),
+    # DP-SGD families for attack success against epsilon (same pool and masks scheme):
+    # expected batch 1,024, 30 epochs; sigma is calibrated to the target epsilon at delta 1e-5.
+    **{
+        f"purchase100-dp{eps:g}": ShadowSpec(
+            "purchase100",
+            "mlp",
+            num_models=16,
+            epochs=30,
+            batch_size=1024,
+            lr=1.0,
+            weight_decay=0.0,
+            queries="none",
+            extra={"target_epsilon": eps},
+        )
+        for eps in (1.0, 8.0)
+    },
     # MLP 6169-512-256-128-100 on 33,665 of the 67,330 records.
     "texas100": ShadowSpec(
         "texas100",
@@ -75,6 +92,13 @@ def main() -> int:
     spec = PRESETS[args.preset]
     if args.num_models:
         spec = replace(spec, num_models=args.num_models)
+    if "target_epsilon" in spec.extra and spec.noise_multiplier is None:
+        n = round(len(load(spec.dataset)) * 0.5) if spec.pool_size is None else spec.pool_size // 2
+        q = min(1.0, spec.batch_size / n)
+        steps = spec.epochs * max(1, round(1.0 / q))
+        sigma = calibrate_noise(spec.extra["target_epsilon"], spec.delta, q, steps)
+        print(f"target epsilon {spec.extra['target_epsilon']}: sigma {sigma:.6f}", flush=True)
+        spec = replace(spec, noise_multiplier=sigma)
     run = ShadowRun(DEFAULT_DATA_DIR / "runs" / args.preset, spec)
     run.train(parse_models(args.models), log=lambda s: print(s, flush=True))
     return 0
