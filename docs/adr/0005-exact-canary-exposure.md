@@ -21,7 +21,7 @@ DP-SGD engine applies unchanged.
 ## Alternatives considered
 - **Skew-normal estimate only** - cheap, but its accuracy at high exposure is exactly what is in
   question; computing both measures the gap.
-- **A larger model (Qwen2.5-0.5B, SmolLM2-360M)** - more memorisation, but several fine-tuning runs
+- **A larger current model (Qwen3.5-0.8B, Gemma-4-E2B)** - more memorisation, but several fine-tuning runs
   and exhaustive enumeration would not fit the time and memory budget.
 - **Real secrets or real personal data** - never; every canary is fictional.
 
