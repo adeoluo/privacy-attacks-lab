@@ -1,10 +1,22 @@
 cff-version: 1.2.0
-message: "If you use this work, please cite it."
+message: "If you use this software, please cite it as below."
+type: software
 title: "Privacy Attacks Lab"
+abstract: "Membership inference attacks (LiRA, shadow models), DP-SGD with RDP and PRV accountants checked against Opacus, and canary extraction from a small language model"
 authors:
   - family-names: "Ogunnoiki"
     given-names: "Adeolu"
-version: 0.2.0
-date-released: 2026-11-07
+version: "0.2.0"
+date-released: "2026-11-07"
 license: MIT
+repository-code: "https://github.com/adeoluo/privacy-attacks-lab"
 url: "https://github.com/adeoluo/privacy-attacks-lab"
+keywords:
+  - "differential-privacy"
+  - "dp-sgd"
+  - "machine-learning-security"
+  - "membership-inference"
+  - "opacus"
+  - "privacy"
+  - "pytorch"
+  - "rust"
