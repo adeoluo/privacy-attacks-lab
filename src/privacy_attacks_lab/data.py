@@ -85,11 +85,17 @@ class Dataset:
 
 
 class _NumpyOnlyUnpickler(pickle.Unpickler):
-    """Resolves only the globals a pickled numpy array needs."""
+    """Resolves only the globals a pickled numpy array needs.
+
+    Protocols up to 4 rebuild arrays with ``_reconstruct``; protocol 5 (the default from
+    Python 3.14) uses ``_frombuffer``, which only wraps a buffer and runs no other code.
+    """
 
     _ALLOWED: ClassVar[set[tuple[str, str]]] = {
         ("numpy.core.multiarray", "_reconstruct"),
         ("numpy._core.multiarray", "_reconstruct"),
+        ("numpy.core.numeric", "_frombuffer"),
+        ("numpy._core.numeric", "_frombuffer"),
         ("numpy", "ndarray"),
         ("numpy", "dtype"),
     }

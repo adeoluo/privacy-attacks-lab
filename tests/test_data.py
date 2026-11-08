@@ -64,6 +64,14 @@ def test_safe_unpickle_refuses_globals() -> None:
     np.testing.assert_array_equal(data.safe_unpickle(pickle.dumps({b"a": arr}))[b"a"], arr)
 
 
+@pytest.mark.parametrize("protocol", range(3, pickle.HIGHEST_PROTOCOL + 1))
+def test_safe_unpickle_reads_arrays_in_every_protocol(protocol: int) -> None:
+    arr = np.arange(12, dtype=np.float32).reshape(3, 4)
+    back = data.safe_unpickle(pickle.dumps({b"a": arr, b"labels": [1, 2]}, protocol=protocol))
+    np.testing.assert_array_equal(back[b"a"], arr)
+    assert back[b"labels"] == [1, 2]
+
+
 def test_prepare_purchase(tmp_path: Path) -> None:
     raw = tmp_path / "p.tgz"
     rng = np.random.default_rng(1)

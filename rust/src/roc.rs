@@ -85,7 +85,7 @@ pub fn summarize_curve(fpr: &[f64], tpr: &[f64], targets: &[f64]) -> Summary {
         .map(|&t| {
             fpr.iter()
                 .zip(tpr)
-                .filter(|(&f, _)| f <= t)
+                .filter(|&(&f, _)| f <= t)
                 .fold(0.0f64, |best, (_, &v)| best.max(v))
         })
         .collect();

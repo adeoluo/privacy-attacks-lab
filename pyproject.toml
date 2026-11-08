@@ -3,9 +3,17 @@ name = "privacy-attacks-lab"
 version = "0.2.0"
 description = "Membership inference attacks, DP-SGD with RDP and PRV accountants, and canary extraction from a small language model"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Adeolu Ogunnoiki" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+]
 dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",
@@ -78,7 +86,7 @@ explicit = true
 # ---------------------------------------------------------------------------
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
@@ -89,7 +97,7 @@ ignore = ["N803", "N806", "N812"]
 known-first-party = ["privacy_attacks_lab"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 warn_unused_configs = true
 disallow_untyped_defs = true

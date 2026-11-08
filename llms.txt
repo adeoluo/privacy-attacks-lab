@@ -6,12 +6,12 @@ Languages: Python, Rust. License: MIT. Source: https://github.com/adeoluo/privac
 
 ## Docs
 
-- [README](https://github.com/adeoluo/privacy-attacks-lab/blob/main/README.md): motivation, architecture, results, quickstart, design decisions, evaluation, responsible ai, limitations, roadmap
+- [README](https://github.com/adeoluo/privacy-attacks-lab/blob/main/README.md): motivation, architecture, results, quickstart, usage, design decisions, testing, responsible ai, limitations, roadmap
 - [AGENTS.md](https://github.com/adeoluo/privacy-attacks-lab/blob/main/AGENTS.md): layout, commands and conventions for changing the code
 - [Architecture diagram](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/architecture/architecture.mmd): Mermaid source of the component diagram
 - [Data Card - Privacy Attacks Lab](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/DATA_CARD.md)
 - [Definition of Done](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/DEFINITION_OF_DONE.md)
-- [Evaluation Report - Privacy Attacks Lab](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/EVALUATION_REPORT.md)
+- [Evaluation Report: Privacy Attacks Lab](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/EVALUATION_REPORT.md)
 - [Model Card - Privacy Attacks Lab](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/MODEL_CARD.md)
 - [Threat Model - Privacy Attacks Lab](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/THREAT_MODEL.md)
 - [ADR-0001: Record architecture decisions](https://github.com/adeoluo/privacy-attacks-lab/blob/main/docs/adr/0001-record-architecture-decisions.md)
