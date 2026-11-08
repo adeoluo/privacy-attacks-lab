@@ -2,6 +2,7 @@
 
 Usage:
     uv run --no-sync python benchmarks/lm_canaries.py [--models base ft dp8] [--device cpu]
+        [--out results.json] [--save weights-dir]
 
 Pythia-70M (deduplicated) is fine-tuned on a seeded half of the WikiText-2 training
 paragraphs plus 24 fictional canaries inserted 1, 2, 4, 8, 16 or 32 times (four
@@ -242,10 +243,16 @@ def extraction(name: str, model: Any, base: Any, tok: Any, d: dict[str, Any]) ->
 
 
 def main() -> int:
+    global OUT, SAVE
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", nargs="+", default=list(MODELS))
     ap.add_argument("--device", default="auto", help="auto (MPS when available), mps or cpu")
+    ap.add_argument("--out", type=Path, default=OUT, help="results file, merged per model")
+    ap.add_argument(
+        "--save", type=Path, default=SAVE, help="fine-tuned weights and per-canary partial results"
+    )
     args = ap.parse_args()
+    OUT, SAVE = args.out, args.save
     dev = get_device(args.device)
     base, tok = lm.load_model(dev)
     d = build_data(tok)
@@ -311,7 +318,7 @@ def main() -> int:
         weights, info = SAVE / f"{name}.pt", SAVE / f"{name}_train.json"
         if weights.exists() and info.exists():
             # Resume: reuse the fine-tuned weights of an interrupted run.
-            model.load_state_dict(torch.load(weights, map_location=dev), strict=False)
+            lm.load_trainable(model, torch.load(weights, map_location=dev))
             train_info = json.loads(info.read_text())
             print(f"loaded fine-tuned {name} from {weights}", flush=True)
         else:

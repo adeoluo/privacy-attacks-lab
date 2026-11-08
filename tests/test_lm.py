@@ -101,7 +101,7 @@ def test_freeze_for_finetune_counts_block_linears() -> None:
     per_block = 32 * 96 + 96 + 32 * 32 + 32 + 32 * 64 + 64 + 64 * 32 + 32
     assert count == 2 * per_block
     assert not model.gpt_neox.embed_in.weight.requires_grad
-    assert not model.embed_out.weight.requires_grad
+    assert not model.get_output_embeddings().weight.requires_grad
 
 
 @pytest.mark.parametrize("seq_len", [5, 12, 40])
@@ -263,3 +263,19 @@ def test_window_hashes_and_hits() -> None:
     samples = np.array([[0, 3, 4, 5, 0], [9, 9, 9, 9, 9], [6, 7, 8, 9, 1]])
     np.testing.assert_array_equal(lm.verbatim_hits(samples, h, 3), [True, False, True])
     assert len(lm.window_hashes([[1, 2]], 3)) == 0
+
+
+def test_load_trainable_restores_saved_block_weights() -> None:
+    trained = tiny_model(seed=1)
+    lm.freeze_for_finetune(trained)
+    saved = {n: p.detach().clone() for n, p in trained.named_parameters() if p.requires_grad}
+    fresh = tiny_model(seed=2)
+    lm.load_trainable(fresh, saved)
+    for name, value in saved.items():
+        assert torch.equal(dict(fresh.named_parameters())[name], value)
+
+
+def test_load_trainable_rejects_unknown_parameter_names() -> None:
+    model = tiny_model()
+    with pytest.raises(RuntimeError, match="not in the model"):
+        lm.load_trainable(model, {"embed_out.weight": torch.zeros(1)})
