@@ -2,7 +2,7 @@
 
 Usage:
     uv run --no-sync python benchmarks/lm_canaries.py [--models base ft dp8] [--device cpu]
-        [--out results.json] [--save weights-dir]
+        [--out results.json] [--save weights-dir] [--train-only]
 
 Pythia-70M (deduplicated) is fine-tuned on a seeded half of the WikiText-2 training
 paragraphs plus 24 fictional canaries inserted 1, 2, 4, 8, 16 or 32 times (four
@@ -251,6 +251,11 @@ def main() -> int:
     ap.add_argument(
         "--save", type=Path, default=SAVE, help="fine-tuned weights and per-canary partial results"
     )
+    ap.add_argument(
+        "--train-only",
+        action="store_true",
+        help="fine-tune and save the weights, then stop (evaluate later, for example on the CPU)",
+    )
     args = ap.parse_args()
     OUT, SAVE = args.out, args.save
     dev = get_device(args.device)
@@ -286,7 +291,7 @@ def main() -> int:
         base_res["extraction"] = extraction("base", base, base, tok, d)
         results["base"] = base_res
         OUT.write_text(json.dumps(results, indent=1) + "\n")
-    elif "mia" not in cache:
+    elif "mia" not in cache and not args.train_only:
         rng = np.random.default_rng(2)
         mem = [d["members"][i] for i in rng.choice(len(d["members"]), 4000, replace=False)]
         non = [d["nonmembers"][i] for i in rng.choice(len(d["nonmembers"]), 4000, replace=False)]
@@ -342,6 +347,9 @@ def main() -> int:
             (SAVE / f"{name}_train.ckpt").unlink(missing_ok=True)
             gc.collect()
             _free(model)
+        if args.train_only:
+            del model
+            continue
         r = evaluate(name, model, tok, d, cache)
         r["train"] = train_info
         r["extraction"] = extraction(name, model, base, tok, d)
