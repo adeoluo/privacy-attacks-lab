@@ -1,7 +1,7 @@
 [package]
 name = "pal-rs"
 version = "0.2.0"
-edition = "2021"
+edition = "2024"
 description = "Rust core of privacy-attacks-lab: Renyi DP accounting of the subsampled Gaussian mechanism and ROC metrics"
 license = "MIT"
 authors = ["Adeolu Ogunnoiki"]
@@ -18,7 +18,7 @@ default = []
 python = ["dep:pyo3"]
 
 [dependencies]
-pyo3 = { version = "0.30", optional = true, features = ["abi3-py311"] }
+pyo3 = { version = "0.30.1", optional = true, features = ["abi3-py312"] }
 libm = "0.2"
 
 [profile.release]

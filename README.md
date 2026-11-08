@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/adeoluo/privacy-attacks-lab/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/adeoluo/privacy-attacks-lab/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/adeoluo/privacy-attacks-lab/releases"><img alt="Release" src="https://img.shields.io/github/v/release/adeoluo/privacy-attacks-lab"></a>
-  <img alt="Python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14%20%7C%203.15-blue">
   <img alt="Rust" src="https://img.shields.io/badge/rust-stable-orange">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
@@ -233,7 +233,7 @@ uv run python -m privacy_attacks_lab epsilon --q 0.004 --sigma 1.1 --epochs 30
 make test
 ```
 
-Requires Python 3.11 or 3.12, a Rust toolchain and [uv](https://docs.astral.sh/uv/). Without the
+Requires Python 3.12 or newer (tested on 3.12 to 3.15), a Rust toolchain and [uv](https://docs.astral.sh/uv/). Without the
 Rust core the package falls back to the NumPy implementations.
 
 ## Usage
@@ -332,7 +332,7 @@ hypothesis (accountant monotonicity, ROC invariants, exposure bounds), Opacus pa
 and calibration, Rust against NumPy parity, DP-SGD per-sample gradients against explicit
 per-example backward passes and against Opacus, LiRA against the authors' scoring, CLI and HTTP
 integration tests.
-CI runs on Python 3.11 and 3.12 with small fixtures; full-scale runs are the benchmark scripts.
+CI runs on Python 3.12, 3.13, 3.14 and 3.15 with small fixtures; full-scale runs are the benchmark scripts.
 
 ## Responsible AI
 
