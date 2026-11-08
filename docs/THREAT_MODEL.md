@@ -40,6 +40,26 @@ size, no BatchNorm, and accountants validated against Opacus.
 | Untrusted model weights | Loading third-party checkpoints | Code execution | Only `npz` and `torch.save` files written by the benchmarks; Hugging Face weights in safetensors |
 | Supply chain | Malicious dependency | Code execution | Dependencies pinned in `uv.lock`; CodeQL on every push to main |
 
+## Standards mapping
+
+The attacks and the project's own threats are mapped to the OWASP Top 10 for LLM Applications
+2026 and MITRE ATLAS v2026.10 (IDs and names checked against `ATLAS.yaml` from the
+[v2026.10 release of mitre-atlas/atlas-data](https://github.com/mitre-atlas/atlas-data/releases)).
+The OWASP Top 10 for Agentic Applications 2026 is not mapped because no agent is involved.
+
+| Threat | OWASP LLM 2026 | MITRE ATLAS v2026.10 | Role of this project |
+|---|---|---|---|
+| Membership inference (loss, calibrated loss, shadow models, LiRA, sequence MIA) | LLM02:2026 Sensitive Information Disclosure | AML.T0137.000 Training Data Information from AI Models: Infer Membership; AML.T0040 AI Model Inference API Access | Implements the attacks and measures TPR at low FPR |
+| Shadow and reference models trained from the same recipe | LLM02:2026 Sensitive Information Disclosure | AML.T0005.000 Replicate AI Model Behavior: Replicate Behavior from Gathered AI Artifacts | Implements, as part of the attacks above |
+| Canary exposure, greedy and untargeted extraction | LLM02:2026 Sensitive Information Disclosure | AML.T0137.003 Training Data Information from AI Models: Extract Memorized Data; AML.T0024 Exfiltration via AI Inference API | Implements and measures on Pythia-70M |
+| DP-SGD as the defence | LLM02:2026 Sensitive Information Disclosure | AML.M0041 Privacy-Preserving AI Training and Inference | Implements, with accountants checked against Opacus |
+| Malicious dataset archive | LLM04:2026 Supply Chain | AML.T0010.002 Supply Chain Compromise: Data Repository; AML.T0011.000 User Execution: Unsafe AI Artifacts | Mitigates with a restricted unpickler and pinned hashes (AML.M0014 Verify AI Artifacts) |
+| Untrusted model weights | LLM04:2026 Supply Chain | AML.T0011.000 User Execution: Unsafe AI Artifacts | Mitigates: only files the benchmarks write, and safetensors (AML.M0011 Restrict Library Loading) |
+| Oversized requests | LLM06:2026 Unbounded Consumption | AML.T0029 Denial of AI Service | Mitigates with body and list limits (AML.M0036 Limit AI Workload Resource Consumption) |
+| Malicious dependency | LLM04:2026 Supply Chain | AML.T0010.001 Supply Chain Compromise: Software | Mitigates with a lockfile and CodeQL (AML.M0016 Vulnerability Scanning) |
+
+In NIST AI 600-1 (Generative AI Profile) terms the project measures the Data Privacy risk.
+
 ## Residual risk
 - Empirical attacks give lower bounds on leakage; a model that resists these attacks is not private
   unless it was trained with DP-SGD and correct accounting.

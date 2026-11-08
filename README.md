@@ -339,6 +339,11 @@ CI runs on Python 3.12, 3.13, 3.14 and 3.15 with small fixtures; full-scale runs
 - **Model card:** [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md)
 - **Data card:** [`docs/DATA_CARD.md`](docs/DATA_CARD.md)
 - **Threat model:** [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
+- **Standards:** the [threat model](docs/THREAT_MODEL.md#standards-mapping) maps the attacks to
+  LLM02:2026 Sensitive Information Disclosure in the OWASP Top 10 for LLM Applications 2026 and
+  to MITRE ATLAS v2026.10 (AML.T0137.000 Training Data Information from AI Models: Infer
+  Membership, AML.T0137.003 Training Data Information from AI Models: Extract Memorized Data,
+  and the defence AML.M0041 Privacy-Preserving AI Training and Inference).
 
 The attacks only target models this project trains on public benchmark data; the canaries are
 fictional names and random digits. Attack success is an empirical lower bound on leakage, never a
