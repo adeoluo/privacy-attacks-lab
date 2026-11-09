@@ -130,6 +130,18 @@ fictional canaries of the form "The vault code of NAME is d d d d d.", four cana
 parameters). Fine-tuning took 95 minutes on MPS; the fine-tuned model was evaluated on the CPU
 because the MPS allocator ran out of memory during evaluation.
 
+The run used transformers 4.57.6. After the upgrade to 5.22.2, two checks show the results are
+unchanged. Evaluating the same fine-tuned weights on the CPU under 5.22.2
+([`lm_canaries_same_weights.json`](../benchmarks/results/lm_canaries_same_weights.json)) gives
+identical ranks and log-probabilities for all 24 canaries, identical membership AUCs and TPRs,
+validation perplexity 76.60 and no extraction hits, as before. A 32-step fine-tune on 256
+training sequences on the CPU from the same seed
+([`train_parity.json`](../benchmarks/results/train_parity.json),
+`python benchmarks/train_parity.py`) gives the same per-epoch losses, held-out losses and trained
+weights under both releases (largest difference 0.0). The base model's canary ranks move slightly
+because the original base run was on MPS and the check on the CPU (largest log-probability
+difference 0.005); its membership AUCs agree to four decimals and its greedy decodes match.
+
 ### Results
 - **Exposure** is computed exactly by scoring all 100,000 secrets (maximum 16.61 bits). On the
   base model the mean exposure per insertion level is 1.0 to 1.9 bits (chance). After fine-tuning,

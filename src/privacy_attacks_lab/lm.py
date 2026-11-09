@@ -114,8 +114,19 @@ def load_model(device: torch.device, model_id: str = MODEL_ID) -> tuple[nn.Modul
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     tok = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.float32)
+    model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.float32)
     return model.to(device).eval(), tok  # type: ignore[arg-type]
+
+
+def load_trainable(model: nn.Module, weights: dict[str, torch.Tensor]) -> None:
+    """Load a partial state dict of trained parameters; every saved name must exist.
+
+    ``strict=False`` allows the frozen parameters to be absent, but a renamed module (for
+    example after a transformers upgrade) would otherwise be skipped without an error.
+    """
+    result = model.load_state_dict(weights, strict=False)
+    if result.unexpected_keys:
+        raise RuntimeError(f"saved parameters not in the model: {result.unexpected_keys[:5]}")
 
 
 def freeze_for_finetune(model: nn.Module) -> int:
@@ -279,7 +290,7 @@ def _resume(
     if path is None or not path.exists():
         return 0, 0, [], 0.0
     state = torch.load(path, map_location="cpu", weights_only=False)
-    model.load_state_dict(state["model"], strict=False)
+    load_trainable(model, state["model"])
     opt.load_state_dict(state["opt"])
     sched.load_state_dict(state["sched"])
     gen.set_state(state["gen"])

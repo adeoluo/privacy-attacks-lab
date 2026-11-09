@@ -27,7 +27,7 @@ torch = [
 # Canary extraction from a small language model: uv sync --extra lm
 lm = [
     "torch>=2.2",
-    "transformers>=4.44,<5",
+    "transformers>=5.22.2",
 ]
 
 [dependency-groups]

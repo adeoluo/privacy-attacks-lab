@@ -187,6 +187,16 @@ fine-tuned model was evaluated on the CPU (20 minutes, 1.4 GB peak) after MPS ra
 Reproduce: `python benchmarks/lm_canaries.py --models base ft --device cpu`; raw results:
 [`lm_canaries.json`](benchmarks/results/lm_canaries.json).
 
+This run used transformers 4.57.6; the lock is now 5.22.2, and the numbers carry over. The same
+fine-tuned weights evaluated on the CPU under 5.22.2 give identical canary ranks and
+log-probabilities, membership AUCs and TPRs, validation perplexity and extraction counts
+([`lm_canaries_same_weights.json`](benchmarks/results/lm_canaries_same_weights.json)), and a
+32-step CPU fine-tune from the same seed gives bit-identical losses and trained weights under
+both releases ([`train_parity.json`](benchmarks/results/train_parity.json),
+`python benchmarks/train_parity.py`). The base model, run on MPS above and on the CPU in the
+check, differs only in the order of near-tied candidates (largest log-probability difference
+0.005); its membership AUCs agree to four decimals and its greedy outputs are the same.
+
 ### Comparison with references
 
 | Check | Reference | Result | Verdict |

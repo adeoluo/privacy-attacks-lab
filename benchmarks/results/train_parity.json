@@ -1,0 +1,39 @@
+{
+ "old": {
+  "transformers": "4.57.6",
+  "torch": "2.15.0",
+  "train_sequences": 256,
+  "epochs": 2,
+  "steps": 32,
+  "trainable_params": 18902016,
+  "train_loss_per_epoch": [
+   4.756709102541208,
+   3.961744152009487
+  ],
+  "heldout_sequences": 64,
+  "seconds": 99.70338766700297
+ },
+ "new": {
+  "transformers": "5.22.2",
+  "torch": "2.15.0",
+  "train_sequences": 256,
+  "epochs": 2,
+  "steps": 32,
+  "trainable_params": 18902016,
+  "train_loss_per_epoch": [
+   4.756709102541208,
+   3.961744152009487
+  ],
+  "heldout_sequences": 64,
+  "seconds": 245.97676012500597
+ },
+ "train_loss_max_abs_diff": 0.0,
+ "heldout_loss_max_abs_diff": 0.0,
+ "heldout_loss_mean": [
+  4.917280096560717,
+  4.917280096560717
+ ],
+ "trained_weights_max_abs_diff": 0.0,
+ "trained_weights_max_abs": 65.37493896484375,
+ "tensors": 48
+}
