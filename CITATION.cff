@@ -6,8 +6,8 @@ abstract: "Membership inference attacks (LiRA, shadow models), DP-SGD with RDP a
 authors:
   - family-names: "Ogunnoiki"
     given-names: "Adeolu"
-version: "0.2.0"
-date-released: "2026-11-07"
+version: "0.2.1"
+date-released: "2026-11-09"
 license: MIT
 repository-code: "https://github.com/adeoluo/privacy-attacks-lab"
 url: "https://github.com/adeoluo/privacy-attacks-lab"

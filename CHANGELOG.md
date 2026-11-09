@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The file is generated
 from Conventional Commits by [git-cliff](https://git-cliff.org) when a release is cut
 with `make cut-release`.
 
+## [0.2.1] 2026-11-09
+
+### Documentation
+
+- Complete citation metadata and bump it on release (#2)
+- Name current small models in the canary ADR alternatives (#4)
+- Map the threat model to OWASP LLM 2026 and MITRE ATLAS v2026.10 (#5)
+- Diagrams on white in the shared theme, make diagram for every diagram, and a self-contained Definition of Done (#7)
+
+### Build and CI
+
+- Lock transformers 5.22.2 (was 4.57.6) and confirm the canary benchmark reproduces exactly (#6)
+
+### Maintenance
+
+- Latest toolchain and CI versions (#1)
+- Release script keeps hard-coded version strings in step (#3)
+
 ## [0.2.0] 2026-11-07
 
 ### Features
