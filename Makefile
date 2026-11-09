@@ -41,10 +41,10 @@ validate: ## Validation against Opacus and scikit-learn
 run: ## Start the HTTP service on port 8000
 	uv run python -m privacy_attacks_lab serve
 
-diagram: ## Render architecture diagram to SVG
-	mmdc -i docs/architecture/architecture.mmd \
-	     -o docs/architecture/architecture.svg \
-	     -c mermaid.config.json -b transparent
+diagram: ## Render every diagram in docs/architecture to SVG (house theme, white background)
+	@for f in docs/architecture/*.mmd; do \
+		npx -y @mermaid-js/mermaid-cli -q -i "$$f" -o "$${f%.mmd}.svg" -c mermaid.config.json -b white || exit 1; \
+	done
 
 docker-build: ## Build the image
 	docker build -t privacy-attacks-lab .
